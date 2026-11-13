@@ -36,6 +36,7 @@ MOCK_STORAGE = r"""
 def test_manifest_and_assets():
     m = json.loads((ROOT / 'manifest.json').read_text(encoding='utf-8'))
     assert m['manifest_version'] == 3
+    assert m['version'] == '0.1.0'
     assert m['permissions'] == ['storage']
     assert m['content_scripts'][0]['matches'] == ['https://web.whatsapp.com/*']
     files = [m['background']['service_worker'], m['action']['default_popup']]
@@ -48,7 +49,7 @@ def test_chromium_styles_content_and_popup():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
         context = browser.new_context(viewport={'width':1024,'height':900})
-        
+
         try:
             wa = context.new_page()
             wa.set_content(MOCK.read_text(encoding='utf-8'))
@@ -57,12 +58,19 @@ def test_chromium_styles_content_and_popup():
             wa.add_script_tag(path=str(ROOT/'shared'/'config.js'))
             wa.add_script_tag(path=str(ROOT/'src'/'content.js'))
             wa.wait_for_function("document.documentElement.dataset.nbActive === 'true'")
-            wa.wait_for_function("document.title.includes('Neblina')")
+            assert 'Neblina' not in wa.title()
             assert 'blur' in wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter')
             assert 'blur' in wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter')
             assert 'blur' in wa.locator('#avatar').evaluate('(el)=>getComputedStyle(el).filter')
             assert 'blur' in wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter')
             assert 'blur' in wa.locator('#media').evaluate('(el)=>getComputedStyle(el).filter')
+            assert 'blur' in wa.locator('[data-testid="conversation-info-header-button"]').evaluate('(el)=>getComputedStyle(el).filter')
+            # O texto deve continuar borrado ao digitar, mesmo com hover e foco.
+            editor = wa.locator('#editor')
+            editor.hover()
+            editor.click()
+            editor.fill('Escrevendo uma mensagem sigilosa')
+            assert 'blur' in editor.evaluate('(el)=>getComputedStyle(el).filter')
 
             # Mudanças se refletem na CSS da conversa.
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{previews:false},blur:18}})")
@@ -70,6 +78,9 @@ def test_chromium_styles_content_and_popup():
             assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
             assert 'blur' in wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter')
             assert wa.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--nb-blur').trim()") == '18px'
+
+            wa.evaluate("chrome.storage.local.set({neblinaSettings:{hideTabTitle:true}})")
+            wa.wait_for_function("document.title.includes('Neblina')")
 
             # Escudo torna o conteúdo inacessível enquanto ativo e possui saída.
             wa.evaluate('chrome.storage.local.set({neblinaSettings:{shield:true}})')
@@ -88,6 +99,7 @@ def test_chromium_styles_content_and_popup():
             popup.add_script_tag(path=str(ROOT/'popup'/'popup.js'))
             popup.wait_for_function("document.querySelector('#status').textContent.includes('Ativa')")
             assert popup.get_by_role('heading',name='O que proteger').count() == 1
+            assert popup.locator('#hideTabTitle').is_checked() is False
             popup.locator('[data-category="previews"]').uncheck(force=True)
             assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.categories.previews") is False
             popup.locator('#shield-action').click()
@@ -95,14 +107,5 @@ def test_chromium_styles_content_and_popup():
             popup.locator('#blur').fill('18')
             popup.wait_for_timeout(160)
             assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.blur") == 18
-            # Print da interface com proteção ligada, em perfil Total, para o README.
-            popup.locator('[data-preset="full"]').click()
-            assert popup.locator('[data-category="previews"]').is_checked()
-            popup.locator('#shield-action').click()
-            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.shield") is False
-            popup.locator('#blur').fill('11')
-            popup.wait_for_timeout(240)
-            popup.set_viewport_size({'width':390,'height':1200})
-            popup.screenshot(path=str(ROOT/'docs'/'popup-preview.png'),full_page=True)
         finally:
             context.close();browser.close()

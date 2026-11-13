@@ -9,9 +9,9 @@ Extensão **independente e gratuita** para Google Chrome (Manifest V3) que desfo
 - **Proteção por categoria:** mensagens, últimas mensagens, nomes/grupos, fotos de perfil, mídias e campo de digitação.
 - **Três perfis:** Total, Equilibrado e Lista. É possível personalizar qualquer configuração.
 - **Controle de intensidade:** desfoque de 4 até 24 pixels.
-- **Revelação ao passar o mouse:** somente o elemento sob o ponteiro fica legível (opcional).
+- **Revelação ao passar o mouse:** opcional para mensagens, nomes, prévias e mídias; o campo de digitação permanece oculto mesmo com foco.
 - **Modo escudo:** overlay na página para ocultar tudo com um clique.
-- **Título neutro da aba:** evita exibir contatos no título do navegador.
+- **Título neutro da aba:** funcionalidade opcional, desativada por padrão, para ocultar o nome no navegador.
 - **Atalho de teclado:** `Alt + Shift + B` ativa/desativa a proteção.
 - **Configurações locais:** somente `chrome.storage.local`; mensagens não são armazenadas ou transmitidas pela extensão.
 
@@ -78,3 +78,11 @@ Projeto independente inspirado funcionalmente na [Extensão de Privacidade para 
 ## Licença
 
 MIT — veja [LICENSE](LICENSE).
+
+
+## Versão de desenvolvimento 0.1.0
+
+- `Ocultar título da aba` agora vem **desativado por padrão**.
+- O seletor de **nomes e grupos** foi reforçado para o cabeçalho atual do WhatsApp Web.
+- O **campo de digitação** permanece borrado mesmo durante a digitação.
+- O **popup** recebeu revisão visual com layout mais limpo e profissional.

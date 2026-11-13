@@ -7,7 +7,7 @@
     enabled: true,
     shield: false,
     revealOnHover: true,
-    hideTabTitle: true,
+    hideTabTitle: false,
     blur: 11,
     categories: {
       messages: true,
@@ -20,7 +20,7 @@
   });
   const PRESETS = Object.freeze({
     full: {messages:true, previews:true, names:true, avatars:true, media:true, composer:true},
-    balanced: {messages:true, previews:true, names:false, avatars:false, media:true, composer:false},
+    balanced: {messages:true, previews:true, names:false, avatars:false, media:true, composer:true},
     sidebar: {messages:false, previews:true, names:true, avatars:true, media:false, composer:false}
   });
   function normalize(value) {

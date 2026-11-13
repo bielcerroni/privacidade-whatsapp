@@ -206,8 +206,40 @@
   }
 
   let hoveredAvatar = null;
+  let hoveredHeaderName = null;
   let pendingPointer = null;
   let pointerScheduled = false;
+
+  function setHoveredHeaderName(next) {
+    if (hoveredHeaderName === next) return;
+    if (hoveredHeaderName) delete hoveredHeaderName.dataset.nbNameHover;
+    hoveredHeaderName = next;
+    if (hoveredHeaderName) hoveredHeaderName.dataset.nbNameHover = 'true';
+  }
+
+  // O WhatsApp pode posicionar uma camada transparente sobre o nome; por isso
+  // :hover do span/botão não é confiável. Detectamos apenas a área do título,
+  // sem alterar ou ler o texto mostrado pelo contato.
+  function updateHeaderNameHover(x, y) {
+    if (!current.enabled || !current.revealOnHover || !current.categories.names) {
+      setHoveredHeaderName(null);
+      return;
+    }
+    const header = document.querySelector('#main header');
+    if (!header) { setHoveredHeaderName(null); return; }
+    let next = null;
+    for (const name of header.querySelectorAll('[data-nb-name-mask]')) {
+      const rect = name.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) continue;
+      // Pequena margem cobre as camadas de clique, mas não os botões de chamada.
+      if (x >= rect.left - 8 && x <= rect.right + 8 &&
+          y >= rect.top - 8 && y <= rect.bottom + 8) {
+        next = name;
+        break;
+      }
+    }
+    setHoveredHeaderName(next);
+  }
 
   function setHoveredAvatar(next) {
     if (hoveredAvatar === next) return;
@@ -247,10 +279,16 @@
     pointerScheduled = true;
     requestAnimationFrame(() => {
       pointerScheduled = false;
-      if (pendingPointer) updateAvatarHover(...pendingPointer);
+      if (pendingPointer) {
+        updateAvatarHover(...pendingPointer);
+        updateHeaderNameHover(...pendingPointer);
+      }
     });
   }, {passive:true, capture:true});
-  document.addEventListener('pointerleave', () => setHoveredAvatar(null));
+  document.addEventListener('pointerleave', () => {
+    setHoveredAvatar(null);
+    setHoveredHeaderName(null);
+  });
 
   function scanDom() {
     scanScheduled = false;
@@ -286,6 +324,7 @@
     manageTitle();
     createShield();
     if (!current.enabled || !current.revealOnHover || !current.categories.avatars) setHoveredAvatar(null);
+    if (!current.enabled || !current.revealOnHover || !current.categories.names) setHoveredHeaderName(null);
     scheduleScan();
   }
 

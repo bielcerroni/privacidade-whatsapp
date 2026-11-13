@@ -62,6 +62,21 @@ html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
   [data-nb-name-zone]:hover [data-nb-name-mask]
 )::after {opacity:0 !important;}
 
+/* Revele o título também quando a camada de clique bloquear :hover.
+   O atributo é aplicado só enquanto o ponteiro está sobre a área do nome. */
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] [data-nb-name-mask][data-nb-name-hover="true"] {
+  color: var(--nb-mask-ink, inherit) !important;
+  -webkit-text-fill-color: var(--nb-mask-ink, currentColor) !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] [data-nb-name-mask][data-nb-name-hover="true"] * {
+  opacity: 1 !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] [data-nb-name-mask][data-nb-name-hover="true"]::after {
+  opacity: 0 !important;
+}
+
 /* A foto fica DESFOCADA mas não desaparece: sem escurecer o conteúdo e sem halo.
    Ao passar o mouse sobre qualquer sobreposição no espaço circular, o JS ativa
    data-nb-avatar-hover mesmo quando o evento não chega ao <img>. */

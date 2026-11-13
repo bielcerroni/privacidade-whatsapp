@@ -116,3 +116,8 @@ MIT — veja [LICENSE](LICENSE).
 - Hover dos avatares detectado pela posição no círculo, inclusive quando o WhatsApp sobrepõe outros elementos ao `<img>`.
 - Horários e datas na lista lateral protegidos junto às prévias, com hover independente.
 - Sem mudanças de permissões, integração externa ou coleta de mensagens.
+
+## Correção v0.1.4
+
+- O nome no cabeçalho da conversa é revelado quando o mouse passa sobre sua área, inclusive quando existe uma camada transparente de clique sobre o título.
+- Preservados os ajustes de privacidade de mensagens, horários, fotos e barra lateral da v0.1.3.

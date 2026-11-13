@@ -172,3 +172,37 @@ def test_dynamic_group_avatar_and_popup():
             assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__state=r.neblinaSettings);window.__state.shield") is True
         finally:
             context.close(); browser.close()
+
+
+def test_header_name_hover_through_overlay():
+    """Uma camada clicável por cima do título não deve bloquear sua revelação."""
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
+        context = browser.new_context(viewport={'width':1024,'height':900})
+        try:
+            wa = context.new_page()
+            setup_wa(wa)
+            wa.evaluate("""() => {
+              const header = document.querySelector('#main header');
+              const name = document.querySelector('#mock-name');
+              const h = header.getBoundingClientRect();
+              const n = name.getBoundingClientRect();
+              const overlay = document.createElement('div');
+              overlay.id = 'name-pointer-overlay';
+              header.style.position = 'relative';
+              overlay.style.cssText = `position:absolute;z-index:99;pointer-events:auto;background:transparent;left:${n.left-h.left}px;top:${n.top-h.top}px;width:${n.width}px;height:${n.height}px`;
+              header.append(overlay);
+            }""")
+            wa.locator('#name-pointer-overlay').hover()
+            wa.wait_for_function("document.querySelector('#mock-name').dataset.nbNameHover === 'true'")
+            wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color !== 'rgba(0, 0, 0, 0)'")
+            wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name'), '::after').opacity === '0'")
+            wa.mouse.move(850, 550)
+            wa.wait_for_function("!document.querySelector('#mock-name').hasAttribute('data-nb-name-hover')")
+            wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color === 'rgba(0, 0, 0, 0)'")
+            wa.evaluate("chrome.storage.local.set({neblinaSettings:{revealOnHover:false}})")
+            wa.locator('#name-pointer-overlay').hover()
+            assert wa.locator('#mock-name').evaluate("el=>!el.hasAttribute('data-nb-name-hover')")
+            assert wa.locator('#mock-name').evaluate("el=>getComputedStyle(el).color") == 'rgba(0, 0, 0, 0)'
+        finally:
+            context.close(); browser.close()

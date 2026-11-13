@@ -183,6 +183,42 @@ html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
   [data-testid="msg-container"] [style*="background-image"]
 ):hover { filter: none !important; }
 
+/* Resposta citada sobre o compositor: protege remetente e mensagem selecionada.
+   O filtro atua no cartão de conteúdo, não no botão X de cancelar. */
+html[data-nb-active="true"]:is([data-nb-messages="true"], [data-nb-composer="true"]) #main :is(
+  [data-nb-reply-preview],
+  [data-testid="quoted-message-preview"],
+  [data-testid="reply-preview"],
+  [data-testid="composer-reply-preview"],
+  [data-testid="reply-quoted-message"]
+) {
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) ease !important;
+}
+html[data-nb-active="true"][data-nb-reveal="hover"]:is([data-nb-messages="true"], [data-nb-composer="true"]) #main :is(
+  [data-nb-reply-preview],
+  [data-testid="quoted-message-preview"],
+  [data-testid="reply-preview"],
+  [data-testid="composer-reply-preview"],
+  [data-testid="reply-quoted-message"]
+):hover { filter: none !important; }
+
+/* A proteção dos avatares precisa existir ANTES da varredura de imagens.
+   WhatsApp Web virtualiza a lista e atualiza src/srcset de fotos a qualquer momento. */
+html[data-nb-active="true"][data-nb-avatars="true"] :is(
+  #pane-side img:not([data-nb-avatar-image]),
+  #main header img:not([data-nb-avatar-image]),
+  #side header img:not([data-nb-avatar-image])
+) {
+  filter: blur(var(--nb-avatar-blur)) saturate(.9) !important;
+  transition: filter var(--nb-duration) ease !important;
+}
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
+  #pane-side img:not([data-nb-avatar-image]):hover,
+  #main header img:not([data-nb-avatar-image]):hover,
+  #side header img:not([data-nb-avatar-image]):hover
+) {filter: none !important;}
+
 /* Campo de digitação: hover revela; foco sozinho não revela. */
 html[data-nb-active="true"][data-nb-composer="true"] :is(
   #main footer [contenteditable="true"],

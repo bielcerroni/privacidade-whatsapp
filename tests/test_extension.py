@@ -206,3 +206,74 @@ def test_header_name_hover_through_overlay():
             assert wa.locator('#mock-name').evaluate("el=>getComputedStyle(el).color") == 'rgba(0, 0, 0, 0)'
         finally:
             context.close(); browser.close()
+
+
+def test_reply_preview_inserted_after_composer_load():
+    """O trecho de resposta deve ficar protegido, sem borrar o X de cancelar."""
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
+        try:
+            page = browser.new_page(viewport={'width':1024,'height':900})
+            setup_wa(page)
+            page.evaluate("""() => {
+              const footer = document.querySelector('#main footer');
+              const reply = document.createElement('div');
+              reply.id = 'reply-card';
+              reply.style.cssText='display:flex;align-items:center;gap:9px;width:325px;height:65px;background:#202526;padding:8px';
+              reply.innerHTML = `<div id="reply-body" style="width:265px;height:42px;display:flex;flex-direction:column;gap:2px">
+                <strong id="quoted-sender">Contato do grupo</strong><span id="quoted-text">Mensagem com conteúdo particular</span>
+                </div><button id="cancel-reply" type="button" aria-label="Cancelar resposta">✕</button>`;
+              footer.insertBefore(reply, footer.firstChild);
+            }""")
+            page.wait_for_function("document.querySelector('#reply-body')?.dataset.nbReplyPreview === 'true'")
+            assert page.locator('#reply-body').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert page.locator('#cancel-reply').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
+            page.locator('#reply-body').hover()
+            page.wait_for_function("getComputedStyle(document.querySelector('#reply-body')).filter === 'none'")
+            page.mouse.move(800,520)
+            page.wait_for_function("getComputedStyle(document.querySelector('#reply-body')).filter.startsWith('blur(')")
+            # O pré-visualizador também é protegido quando apenas Mensagens está ativo.
+            page.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{composer:false,messages:true},revealOnHover:false}})")
+            page.wait_for_function("document.documentElement.dataset.nbComposer === 'false'")
+            assert page.locator('#reply-body').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            page.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{composer:false,messages:false}}})")
+            page.wait_for_function("document.documentElement.dataset.nbMessages === 'false'")
+            page.wait_for_function("getComputedStyle(document.querySelector('#reply-body')).filter === 'none'")
+        finally:
+            browser.close()
+
+
+def test_new_and_replaced_contact_photo_protected_before_dom_scan():
+    """A foto de um contato novo não pode aparecer nítida nem por um frame."""
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
+        try:
+            page = browser.new_page(viewport={'width':1024,'height':900})
+            setup_wa(page)
+            initial = page.evaluate("""() => {
+              const row = document.createElement('div');
+              row.id='incoming-contact'; row.setAttribute('role','gridcell');
+              row.style.cssText='display:flex;gap:12px;align-items:center;margin-top:20px';
+              row.innerHTML=`<div style="width:42px;height:42px;border-radius:50%;overflow:hidden">
+                <img id="incoming-avatar" width="42" height="42" alt="Foto do contato">
+                </div><span>Contato recente</span>`;
+              document.querySelector('#pane-side').append(row);
+              const img = row.querySelector('img');
+              img.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+              return getComputedStyle(img).filter;
+            }""")
+            assert initial.startswith('blur('), 'A proteção CSS deve vir antes do scanDom'
+            page.wait_for_function("document.querySelector('#incoming-avatar')?.dataset.nbAvatarImage === 'true'")
+            assert page.locator('#incoming-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            # Simula foto carregada após uma nova mensagem, reutilizando o mesmo IMG.
+            page.evaluate("""() => {
+              document.querySelector('#incoming-avatar').src =
+                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"%3E%3Crect width="1" height="1" fill="blue"/%3E%3C/svg%3E';
+            }""")
+            assert page.locator('#incoming-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            page.locator('#incoming-avatar').hover()
+            page.wait_for_function("getComputedStyle(document.querySelector('#incoming-avatar')).filter === 'none'")
+            page.mouse.move(850,580)
+            page.wait_for_function("getComputedStyle(document.querySelector('#incoming-avatar')).filter.startsWith('blur(')")
+        finally:
+            browser.close()

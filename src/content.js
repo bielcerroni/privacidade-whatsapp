@@ -290,11 +290,64 @@
     setHoveredHeaderName(null);
   });
 
+  /* O WhatsApp monta o preview da resposta fora do editor, às vezes sem data-testid.
+     Só marcamos a região de texto junto ao compositor e nunca o botão de cancelar. */
+  function markReplyPreviews() {
+    const main = document.getElementById('main');
+    if (!main) return;
+    const composer = main.querySelector('footer [contenteditable="true"], footer [role="textbox"], [data-testid="conversation-compose-box-input"]');
+    const footer = composer?.closest('footer') || main.querySelector('footer');
+    if (!footer) return;
+    const editor = composer || footer;
+    const editBox = editor.getBoundingClientRect();
+    if (editBox.width < 40) return;
+
+    const isNearEditor = (element) => {
+      if (!(element instanceof HTMLElement) || element.contains(editor)) return false;
+      if (element.closest('[data-testid="msg-container"], [data-testid="media-viewer"]')) return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width >= 80 && rect.height >= 18 && rect.height <= 155 &&
+        rect.bottom > editBox.top - 170 && rect.top <= editBox.top + 12 &&
+        rect.left < editBox.right && rect.right > editBox.left;
+    };
+
+    const semantic = '[data-testid="quoted-message-preview"], [data-testid="reply-preview"], [data-testid="composer-reply-preview"], [data-testid="reply-quoted-message"], [data-testid="reply-preview-container"], [data-testid="quoted-message-container"]';
+    for (const candidate of main.querySelectorAll(semantic)) {
+      if (!isNearEditor(candidate)) continue;
+      candidate.dataset.nbReplyPreview = 'true';
+    }
+
+    // Fallback da interface atual: resposta no bloco imediatamente acima do campo.
+    // Limitado aos ancestrais próximos do footer, evitando mensagens do histórico.
+    const roots = [footer, footer.parentElement, footer.parentElement?.parentElement].filter(Boolean);
+    for (const scope of roots) {
+      for (const candidate of scope.querySelectorAll('div, section, article')) {
+        if (candidate.dataset.nbReplyPreview === 'true' || !isNearEditor(candidate)) continue;
+        if (candidate.matches('button, [role="button"]') || candidate.closest('[data-nb-reply-preview]')) continue;
+        const controls = candidate.querySelectorAll('button, [role="button"], [data-icon="x"], [data-icon="close"], [data-testid*="cancel-reply"]');
+        const closers = [...controls].filter(node =>
+          /cancel|close|fechar|descartar|resposta|reply/i.test(node.getAttribute('aria-label') || node.getAttribute('data-testid') || '') ||
+          node.matches('[data-icon="x"], [data-icon="close"]')
+        );
+        // A barra de resposta tem o X fora da área citada. Ao encontrar a barra,
+        // protegemos o filho de conteúdo sem mascarar o controle de fechar.
+        if (closers.length === 0) continue;
+        const possible = [...candidate.children].filter(node =>
+          node instanceof HTMLElement && isNearEditor(node) &&
+          !closers.some(close => node === close || node.contains(close))
+        );
+        const content = possible.sort((a,b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+        if (content) content.dataset.nbReplyPreview = 'true';
+      }
+    }
+  }
+
   function scanDom() {
     scanScheduled = false;
     markNames();
     markSidebarTimes();
     markAvatars();
+    markReplyPreviews();
   }
 
   function scheduleScan() {
@@ -307,9 +360,20 @@
     if (!document.body || domObserver) return;
     scanDom();
     domObserver = new MutationObserver((records) => {
-      if (records.some((record) => record.type === 'childList' || record.type === 'characterData')) scheduleScan();
+      const relevant = records.some(record => {
+        if (record.type === 'childList' || record.type === 'characterData') return true;
+        // Fotos podem aparecer ao trocar somente src/srcset (sem novo nó).
+        // Não observamos data-* nem estilos escritos pela própria extensão.
+        return record.type === 'attributes' &&
+          record.target instanceof HTMLImageElement &&
+          (record.attributeName === 'src' || record.attributeName === 'srcset');
+      });
+      if (relevant) scheduleScan();
     });
-    domObserver.observe(document.body, {childList:true, subtree:true, characterData:true});
+    domObserver.observe(document.body, {
+      childList:true, subtree:true, characterData:true,
+      attributes:true, attributeFilter:['src','srcset']
+    });
   }
 
   function apply(settings) {

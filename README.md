@@ -121,3 +121,10 @@ MIT — veja [LICENSE](LICENSE).
 
 - O nome no cabeçalho da conversa é revelado quando o mouse passa sobre sua área, inclusive quando existe uma camada transparente de clique sobre o título.
 - Preservados os ajustes de privacidade de mensagens, horários, fotos e barra lateral da v0.1.3.
+
+## Correção v0.1.5
+
+- A faixa de resposta citada junto ao campo de digitação também recebe blur, inclusive o nome e o texto da mensagem original. O botão para cancelar a resposta permanece utilizável.
+- Fotos recém-carregadas na lista e no cabeçalho são protegidas por CSS imediatamente, antes da varredura do DOM.
+- Atualizações de `src`/`srcset` em imagens existentes acionam a nova verificação, incluindo listas virtualizadas e contatos carregados após a chegada de mensagens.
+- Sem permissões novas, acesso à rede ou leitura/transmissão do conteúdo das conversas.

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Neblina • Privacidade</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="../shared/config.js"></script>
+  <script defer src="popup.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand-symbol" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="M8 19a8 8 0 0 1 14.8-4.2A5.7 5.7 0 1 1 24 26H9.2A5.1 5.1 0 0 1 8 19Z" fill="currentColor" opacity=".92"/><path d="m16.8 9.2 1.7-3.1 1.5 3.2 3.1 1.6-3.2 1.5-1.6 3.1-1.5-3.2-3.2-1.5 3.2-1.6Z" fill="#AEFAE4"/></svg></div>
+      <div class="brand-text"><strong>neblina<span class="brand-dot">.</span></strong><span>PRIVACIDADE PARA WHATSAPP WEB</span></div>
+      <span class="version">v1.0</span>
+    </header>
+
+    <section class="hero" id="hero" aria-label="Status da proteção">
+      <div class="hero-top"><span class="mini-label">STATUS DA PROTEÇÃO</span><span class="status" id="status"><i></i> Ativa</span></div>
+      <div class="hero-main"><div><h1 id="hero-title">Seu WhatsApp, mais privado.</h1><p id="hero-subtitle">Conversas e informações protegidas contra olhares curiosos.</p></div><label class="big-switch" aria-label="Ativar a proteção"><input type="checkbox" id="enabled" checked><span class="big-switch-track"></span></label></div>
+      <div class="shortcut"><span>Ativar/desativar rapidamente</span><kbd>Alt</kbd><b>+</b><kbd>Shift</kbd><b>+</b><kbd>B</kbd></div>
+    </section>
+
+    <section class="section" aria-labelledby="presets-title">
+      <div class="section-heading"><h2 id="presets-title">Perfis rápidos</h2><span>Escolha um nível de proteção</span></div>
+      <div class="presets" role="group" aria-label="Perfis de privacidade">
+        <button class="preset" type="button" data-preset="full"><span class="preset-icon">◈</span><strong>Total</strong><small>Tudo oculto</small></button>
+        <button class="preset" type="button" data-preset="balanced"><span class="preset-icon">◐</span><strong>Equilibrado</strong><small>Mensagens e mídias</small></button>
+        <button class="preset" type="button" data-preset="sidebar"><span class="preset-icon">▤</span><strong>Lista</strong><small>Somente contatos</small></button>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="custom-title">
+      <div class="section-heading"><h2 id="custom-title">O que proteger</h2><span>Personalize cada detalhe</span></div>
+      <div class="setting-list">
+        <label class="setting"><span class="setting-icon">▧</span><span class="setting-copy"><strong>Mensagens abertas</strong><small>Texto das conversas</small></span><input type="checkbox" data-category="messages"><span class="toggle" aria-hidden="true"></span></label>
+        <label class="setting"><span class="setting-icon">☷</span><span class="setting-copy"><strong>Prévia de mensagens</strong><small>Últimas mensagens na lista</small></span><input type="checkbox" data-category="previews"><span class="toggle" aria-hidden="true"></span></label>
+        <label class="setting"><span class="setting-icon">Aa</span><span class="setting-copy"><strong>Nomes e grupos</strong><small>Identificação dos contatos</small></span><input type="checkbox" data-category="names"><span class="toggle" aria-hidden="true"></span></label>
+        <label class="setting"><span class="setting-icon">◎</span><span class="setting-copy"><strong>Fotos de perfil</strong><small>Avatares dos contatos</small></span><input type="checkbox" data-category="avatars"><span class="toggle" aria-hidden="true"></span></label>
+        <label class="setting"><span class="setting-icon">▣</span><span class="setting-copy"><strong>Imagens e vídeos</strong><small>Mídias e visualizador</small></span><input type="checkbox" data-category="media"><span class="toggle" aria-hidden="true"></span></label>
+        <label class="setting"><span class="setting-icon">⌨</span><span class="setting-copy"><strong>Campo de digitação</strong><small>Esconde o texto enquanto escreve</small></span><input type="checkbox" data-category="composer"><span class="toggle" aria-hidden="true"></span></label>
+      </div>
+    </section>
+
+    <section class="section preferences" aria-labelledby="prefs-title">
+      <div class="section-heading"><h2 id="prefs-title">Comportamento</h2></div>
+      <label class="setting compact"><span class="setting-copy"><strong>Revelar ao passar o mouse</strong><small>Mostra somente o item em destaque</small></span><input type="checkbox" id="revealOnHover"><span class="toggle" aria-hidden="true"></span></label>
+      <label class="setting compact"><span class="setting-copy"><strong>Ocultar título da aba</strong><small>Evita mostrar nomes no navegador</small></span><input type="checkbox" id="hideTabTitle"><span class="toggle" aria-hidden="true"></span></label>
+      <div class="blur-level"><div><strong>Intensidade do desfoque</strong><output id="blur-value" for="blur">11 px</output></div><input type="range" id="blur" min="4" max="24" step="1" value="11"><div class="range-labels"><span>Suave</span><span>Forte</span></div></div>
+    </section>
+
+    <button class="shield-action" id="shield-action" type="button"><span class="shield-icon">✳</span><span><strong>Ativar modo escudo</strong><small>Oculta a tela inteira imediatamente</small></span><span class="shield-arrow">↗</span></button>
+    <footer><span><i class="privacy-dot"></i> 100% local • sem coleta de mensagens</span><span>Feito para sua privacidade</span></footer>
+  </div>
+</body>
+</html>

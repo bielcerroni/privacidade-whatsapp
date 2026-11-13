@@ -1,0 +1,225 @@
+/* Neblina v1.0 — filtros de privacidade isolados em web.whatsapp.com.
+   Os seletores semânticos têm prioridade; fallbacks cobrem versões anteriores. */
+:root { --nb-blur: 11px; --nb-duration: 160ms; }
+
+/* messages */
+html[data-nb-active="true"][data-nb-messages="true"] :is(
+  #main [data-testid="msg-container"],
+  #main .message-in .selectable-text,
+  #main .message-out .selectable-text,
+  #main [data-testid="message-text"],
+  #main [data-testid="msg-text"],
+  #main .message-in .copyable-text,
+  #main .message-out .copyable-text
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] :is(
+  #main [data-testid="msg-container"],
+  #main .message-in .selectable-text,
+  #main .message-out .selectable-text,
+  #main [data-testid="message-text"],
+  #main [data-testid="msg-text"],
+  #main .message-in .copyable-text,
+  #main .message-out .copyable-text
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* previews */
+html[data-nb-active="true"][data-nb-previews="true"] :is(
+  #pane-side [data-testid="cell-frame-secondary"],
+  #pane-side [data-testid="last-msg-status"],
+  #pane-side [data-testid="chat-list-item-message"],
+  #pane-side [role="gridcell"] ._ak8k,
+  #pane-side [role="row"] ._ak8k,
+  #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
+  #side [data-testid="last-message"]
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] :is(
+  #pane-side [data-testid="cell-frame-secondary"],
+  #pane-side [data-testid="last-msg-status"],
+  #pane-side [data-testid="chat-list-item-message"],
+  #pane-side [role="gridcell"] ._ak8k,
+  #pane-side [role="row"] ._ak8k,
+  #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
+  #side [data-testid="last-message"]
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* names */
+html[data-nb-active="true"][data-nb-names="true"] :is(
+  #pane-side [data-testid="cell-frame-title"],
+  #pane-side [role="gridcell"] ._ak8q,
+  #pane-side [role="row"] ._ak8q,
+  #pane-side [role="gridcell"] span[title],
+  #pane-side [data-testid="chatlist-row"] span[title],
+  #main header span[title],
+  #main header [data-testid="conversation-title"],
+  #main [data-testid="author"],
+  #side [data-testid="contact-name"],
+  [data-testid="conversation-info-header"] span[title],
+  [data-testid="chat-subtitle"] span[title]
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
+  #pane-side [data-testid="cell-frame-title"],
+  #pane-side [role="gridcell"] ._ak8q,
+  #pane-side [role="row"] ._ak8q,
+  #pane-side [role="gridcell"] span[title],
+  #pane-side [data-testid="chatlist-row"] span[title],
+  #main header span[title],
+  #main header [data-testid="conversation-title"],
+  #main [data-testid="author"],
+  #side [data-testid="contact-name"],
+  [data-testid="conversation-info-header"] span[title],
+  [data-testid="chat-subtitle"] span[title]
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* avatars */
+html[data-nb-active="true"][data-nb-avatars="true"] :is(
+  #pane-side [data-testid="avatar"],
+  #pane-side [role="gridcell"] img,
+  #pane-side [role="row"] img,
+  #pane-side [data-testid="chatlist-row"] img,
+  #main header img,
+  #side header img,
+  [data-testid="contact-info-panel"] img,
+  [data-testid="avatar"] img,
+  [data-testid="default-user"],
+  #main [data-testid="avatar"],
+  #side [role="gridcell"] img
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
+  #pane-side [data-testid="avatar"],
+  #pane-side [role="gridcell"] img,
+  #pane-side [role="row"] img,
+  #pane-side [data-testid="chatlist-row"] img,
+  #main header img,
+  #side header img,
+  [data-testid="contact-info-panel"] img,
+  [data-testid="avatar"] img,
+  [data-testid="default-user"],
+  #main [data-testid="avatar"],
+  #side [role="gridcell"] img
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* media */
+html[data-nb-active="true"][data-nb-media="true"] :is(
+  #main [data-testid="msg-container"] img,
+  #main [data-testid="msg-container"] video,
+  #main [data-testid="msg-container"] canvas,
+  #main .message-in img,
+  #main .message-out img,
+  #main .message-in video,
+  #main .message-out video,
+  [data-testid="media-viewer"] img,
+  [data-testid="media-viewer"] video,
+  [data-testid="media-gallery"] img,
+  [role="dialog"] img,
+  [role="dialog"] video,
+  [role="listitem"] [style*="background-image"],
+  [data-testid="msg-container"] [style*="background-image"]
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
+  #main [data-testid="msg-container"] img,
+  #main [data-testid="msg-container"] video,
+  #main [data-testid="msg-container"] canvas,
+  #main .message-in img,
+  #main .message-out img,
+  #main .message-in video,
+  #main .message-out video,
+  [data-testid="media-viewer"] img,
+  [data-testid="media-viewer"] video,
+  [data-testid="media-gallery"] img,
+  [role="dialog"] img,
+  [role="dialog"] video,
+  [role="listitem"] [style*="background-image"],
+  [data-testid="msg-container"] [style*="background-image"]
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* composer */
+html[data-nb-active="true"][data-nb-composer="true"] :is(
+  #main footer [contenteditable="true"],
+  #main footer [role="textbox"],
+  #main footer .lexical-rich-text-input,
+  #main [data-testid="conversation-compose-box-input"],
+  #main .lexical-rich-text-input
+) {
+  filter: blur(var(--nb-blur)) grayscale(.25) !important;
+  transition: filter var(--nb-duration) ease-out !important;
+}
+html[data-nb-active="true"][data-nb-composer="true"][data-nb-reveal="hover"] :is(
+  #main footer [contenteditable="true"],
+  #main footer [role="textbox"],
+  #main footer .lexical-rich-text-input,
+  #main [data-testid="conversation-compose-box-input"],
+  #main .lexical-rich-text-input
+):hover {
+  filter: blur(0) grayscale(0) !important;
+}
+
+/* O campo de texto também se revela ao receber foco por teclado. */
+html[data-nb-active="true"][data-nb-composer="true"] :is(
+  #main footer [contenteditable="true"],
+  #main footer [role="textbox"],
+  #main footer .lexical-rich-text-input,
+  #main [data-testid="conversation-compose-box-input"],
+  #main .lexical-rich-text-input
+):focus-within { filter: blur(0) grayscale(0) !important; }
+
+/* Escudo: camada totalmente separada do app, com um botão de saída acessível. */
+html[data-nb-active="true"][data-nb-shield="true"] #app {
+  filter: blur(22px) grayscale(.7) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+#nb-privacy-shield[hidden] { display:none !important; }
+#nb-privacy-shield {
+  position: fixed !important; inset: 0 !important; z-index: 2147483647 !important;
+  display: grid !important; place-items: center !important;
+  padding: 24px !important; background: rgba(6,18,24,.87) !important;
+  backdrop-filter: blur(24px) saturate(.7) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(.7) !important;
+  color: #E8FFF7 !important;
+  font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif !important;
+  text-align:center !important;
+}
+#nb-privacy-shield .nb-shield-card {
+  width:min(100%,440px); padding: 38px 30px !important;
+  border:1px solid #2A746A !important; border-radius:24px !important;
+  background:linear-gradient(145deg,#12353A,#0C1C27) !important;
+  box-shadow:0 30px 80px #0008 !important;
+}
+#nb-privacy-shield .nb-shield-mark {
+  display:grid;place-items:center;margin:0 auto 20px !important;
+  width:60px;height:60px;border-radius:20px;background:#0E7A69 !important;
+  color:#ABFFE2 !important;font-size:38px !important;
+}
+#nb-privacy-shield .nb-shield-eyebrow{font-size:12px;letter-spacing:4px;color:#7BE5C9;font-weight:800}
+#nb-privacy-shield h1{font-size:27px !important;line-height:1.2!important;letter-spacing:-.8px!important;margin:14px 0 8px!important;color:#fff!important}
+#nb-privacy-shield p{font-size:14px!important;color:#ACCAC7!important;line-height:1.6!important;margin:0 0 22px!important}
+#nb-privacy-shield button{display:block;margin:0 auto 18px!important;border:0!important;background:#66E5BC!important;color:#08392F!important;font:700 14px ui-sans-serif,system-ui!important;padding:13px 25px!important;border-radius:11px!important;cursor:pointer!important}
+#nb-privacy-shield button:hover{background:#A4F8D9!important}
+#nb-privacy-shield button:focus-visible{outline:3px solid #fff!important;outline-offset:3px!important}
+#nb-privacy-shield small{font-size:11px!important;color:#8BA7AC!important}
+@media(prefers-reduced-motion:reduce){html[data-nb-active="true"] #app *,html[data-nb-active="true"] #pane-side *{transition:none!important}}

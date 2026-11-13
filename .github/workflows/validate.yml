@@ -1,0 +1,33 @@
+name: Validate extension
+on:
+  push:
+  pull_request:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript
+        run: |
+          node --check background.js
+          node --check shared/config.js
+          node --check src/content.js
+          node --check popup/popup.js
+      - name: Validate manifest and resources
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('.')
+          m=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+          assert m['manifest_version']==3
+          paths=[m['background']['service_worker'],m['action']['default_popup']]
+          for item in m['content_scripts']:
+              paths.extend(item.get('js',[])+item.get('css',[]))
+          paths.extend(m['icons'].values())
+          for p in paths: assert (root/p).is_file(),p
+          assert not m.get('host_permissions')
+          assert m['permissions']==['storage']
+          PY

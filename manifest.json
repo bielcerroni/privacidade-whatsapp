@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Neblina — Privacidade no WhatsApp Web",
+  "short_name": "Neblina",
+  "description": "Proteja suas conversas no WhatsApp Web com desfoque configurável, modo escudo e atalhos.",
+  "version": "1.0.0",
+  "minimum_chrome_version": "110",
+  "permissions": ["storage"],
+  "action": {
+    "default_title": "Neblina — Configurações de privacidade",
+    "default_popup": "popup/index.html",
+    "default_icon": {"16":"icons/icon-16.png", "32":"icons/icon-32.png", "48":"icons/icon-48.png", "128":"icons/icon-128.png"}
+  },
+  "icons": {"16":"icons/icon-16.png", "32":"icons/icon-32.png", "48":"icons/icon-48.png", "128":"icons/icon-128.png"},
+  "background": {"service_worker":"background.js"},
+  "commands": {
+    "toggle-privacy": {
+      "suggested_key": {"default":"Alt+Shift+B"},
+      "description": "Ativar ou desativar proteção"
+    }
+  },
+  "content_scripts": [{
+    "matches": ["https://web.whatsapp.com/*"],
+    "css": ["src/blur.css"],
+    "js": ["shared/config.js", "src/content.js"],
+    "run_at":"document_start"
+  }]
+}

@@ -59,25 +59,23 @@
     shield.hidden = !(current.enabled && current.shield);
   }
 
-  // Só marca o nó que desenha o nome, jamais o botão inteiro ou o status.
+  // Aplica a máscara ao contêiner do nome (não só ao primeiro span):
+  // nomes compostos, emojis e sufixos ficam ocultos como uma única unidade.
   function markNameNode(element, width = '128px') {
-    if (!(element instanceof HTMLElement)) return;
-    if (element.dataset.nbNameText === 'true') return;
-    const originalColor = getComputedStyle(element).color;
-    const surface = findSurfaceColor(element);
-    element.style.setProperty('--nb-mask-ink', originalColor);
-    element.style.setProperty('--nb-mask-surface', surface);
+    if (!(element instanceof HTMLElement) || element.dataset.nbNameMask === 'true') return;
+    const ink = getComputedStyle(element).color;
+    element.style.setProperty('--nb-mask-ink', ink);
+    element.style.setProperty('--nb-mask-surface', findSurfaceColor(element));
     element.style.setProperty('--nb-mask-width', width);
-    element.dataset.nbNameText = 'true';
+    element.dataset.nbNameMask = 'true';
+    element.dataset.nbNameText = 'true'; // compatibilidade com marcadores anteriores
   }
 
   function findSurfaceColor(element) {
     for (let node = element.parentElement; node; node = node.parentElement) {
       const value = getComputedStyle(node).backgroundColor;
-      if (/^rgba?\(/.test(value)) {
-        const rgba = value.match(/[\d.]+/g)?.map(Number) || [];
-        if (rgba.length === 3 || rgba[3] > .85) return value;
-      }
+      const rgba = value.match(/[\d.]+/g)?.map(Number) || [];
+      if (value.startsWith('rgb(') || (value.startsWith('rgba(') && rgba[3] >= .85)) return value;
     }
     return 'rgb(20, 25, 28)';
   }
@@ -87,20 +85,19 @@
     const options = container.matches('span, strong, b, h1, h2, p')
       ? [container, ...container.querySelectorAll('span, strong, b, h1, h2, p')]
       : [...container.querySelectorAll('span, strong, b, h1, h2, p')];
-    return options.find((node) => Array.from(node.childNodes).some((child) =>
-      child.nodeType === Node.TEXT_NODE && child.textContent.trim().length > 0
-    ));
+    return options.find(node => Array.from(node.childNodes).some(child =>
+      child.nodeType === Node.TEXT_NODE && child.textContent.trim().length > 0));
   }
 
   function markNames() {
     const list = document.getElementById('pane-side');
     if (list) {
       for (const container of list.querySelectorAll('[data-testid="cell-frame-title"], ._ak8q, [data-testid="chatlist-row"] span[title], [role="gridcell"] span[title]')) {
-        const name = firstTextNode(container);
-        if (!name) continue;
-        const row = container.closest('[role="row"], [role="gridcell"], [data-testid="chatlist-row"]');
-        if (row) row.dataset.nbNameZone = 'true';
-        markNameNode(name,'118px');
+        const title = container.matches('[data-testid="cell-frame-title"], ._ak8q')
+          ? container : container.closest('[data-testid="cell-frame-title"], ._ak8q') || container;
+        if (!firstTextNode(title)) continue;
+        const row = title.closest('[role="row"], [role="gridcell"], [data-testid="chatlist-row"]');
+        markNameNode(title, '118px');
       }
     }
 
@@ -110,15 +107,31 @@
       const title = header.querySelector('[data-testid="conversation-info-header-chat-title"], [data-testid="conversation-title"], [data-testid="contact-name"], span[title]')
         || (button && firstTextNode(button));
       if (title) {
-        const name = firstTextNode(title) || title;
-        markNameNode(name,'148px');
-        (button || name).dataset.nbNameZone = 'true';
+        markNameNode(title, '148px');
+        (button || title).dataset.nbNameZone = 'true';
       }
     }
     const contact = document.querySelector('#side [data-testid="contact-name"]');
     if (contact) {
-      markNameNode(firstTextNode(contact) || contact, '148px');
+      markNameNode(contact, '148px');
       contact.dataset.nbNameZone = 'true';
+    }
+  }
+
+  function markSidebarTimes() {
+    const list = document.getElementById('pane-side');
+    if (!list) return;
+    const timePattern = /^(?:[01]?\d|2[0-3]):[0-5]\d$/;
+    const datePattern = /^\d{1,2}\/\d{1,2}\/(?:\d{2}|\d{4})$/;
+    for (const node of list.querySelectorAll('span, time, div')) {
+      if (node.dataset.nbSidebarTime === 'true') continue;
+      if (node.children.length > 2) continue;
+      const direct = Array.from(node.childNodes)
+        .filter(child => child.nodeType === Node.TEXT_NODE)
+        .map(child => child.textContent.trim()).filter(Boolean).join('');
+      if (timePattern.test(direct) || datePattern.test(direct) || direct === 'Ontem') {
+        node.dataset.nbSidebarTime = 'true';
+      }
     }
   }
 
@@ -192,9 +205,57 @@
     }
   }
 
+  let hoveredAvatar = null;
+  let pendingPointer = null;
+  let pointerScheduled = false;
+
+  function setHoveredAvatar(next) {
+    if (hoveredAvatar === next) return;
+    if (hoveredAvatar) delete hoveredAvatar.dataset.nbAvatarHover;
+    hoveredAvatar = next;
+    if (hoveredAvatar) hoveredAvatar.dataset.nbAvatarHover = 'true';
+  }
+
+  // Em algumas versões um botão cobre a imagem e impede :hover no <img>.
+  // A posição do ponteiro no círculo resolve sem clicar, sem ler conteúdo.
+  function updateAvatarHover(x, y) {
+    if (!current.enabled || !current.revealOnHover || !current.categories.avatars) {
+      setHoveredAvatar(null);
+      return;
+    }
+    let match = null;
+    let area = Infinity;
+    for (const element of document.querySelectorAll('[data-nb-avatar-frame], [data-nb-avatar-image]')) {
+      if (element.matches('[data-nb-avatar-image]') && element.closest('[data-nb-avatar-frame]')) continue;
+      const rect = element.getBoundingClientRect();
+      if (rect.width < 16 || rect.height < 16 || rect.width > 110 || rect.height > 110) continue;
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (x - cx) / (rect.width / 2);
+      const dy = (y - cy) / (rect.height / 2);
+      if (dx * dx + dy * dy <= 1 && rect.width * rect.height < area) {
+        match = element;
+        area = rect.width * rect.height;
+      }
+    }
+    setHoveredAvatar(match);
+  }
+
+  document.addEventListener('pointermove', event => {
+    pendingPointer = [event.clientX, event.clientY];
+    if (pointerScheduled) return;
+    pointerScheduled = true;
+    requestAnimationFrame(() => {
+      pointerScheduled = false;
+      if (pendingPointer) updateAvatarHover(...pendingPointer);
+    });
+  }, {passive:true, capture:true});
+  document.addEventListener('pointerleave', () => setHoveredAvatar(null));
+
   function scanDom() {
     scanScheduled = false;
     markNames();
+    markSidebarTimes();
     markAvatars();
   }
 
@@ -208,9 +269,9 @@
     if (!document.body || domObserver) return;
     scanDom();
     domObserver = new MutationObserver((records) => {
-      if (records.some((record) => record.type === 'childList')) scheduleScan();
+      if (records.some((record) => record.type === 'childList' || record.type === 'characterData')) scheduleScan();
     });
-    domObserver.observe(document.body, {childList:true, subtree:true});
+    domObserver.observe(document.body, {childList:true, subtree:true, characterData:true});
   }
 
   function apply(settings) {
@@ -224,6 +285,7 @@
     }
     manageTitle();
     createShield();
+    if (!current.enabled || !current.revealOnHover || !current.categories.avatars) setHoveredAvatar(null);
     scheduleScan();
   }
 

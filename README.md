@@ -108,3 +108,11 @@ MIT — veja [LICENSE](LICENSE).
 - Máscaras de nomes usam a cor de fundo do item e largura consistente, sem barras cinzas.
 - Fotos reais de perfil ficam sempre presentes com desfoque sutil de 5px; hover revela sem bloqueios.
 - A bolha da mensagem é desfocada como um todo, incluindo informações de horário e leitura.
+
+## Versão 0.1.3 — reforço do desfoque e horários
+
+- Nomes, emojis e sufixos de conversa ocultos por máscara uniforme de baixo contraste, sem revelar comprimento.
+- O controle de intensidade agora afeta também fotos/avatares, sem limite fixo de 5 px.
+- Hover dos avatares detectado pela posição no círculo, inclusive quando o WhatsApp sobrepõe outros elementos ao `<img>`.
+- Horários e datas na lista lateral protegidos junto às prévias, com hover independente.
+- Sem mudanças de permissões, integração externa ou coleta de mensagens.

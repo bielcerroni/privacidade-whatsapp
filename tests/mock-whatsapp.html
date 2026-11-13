@@ -6,12 +6,12 @@
   <aside id="pane-side" style="width:290px;position:absolute;top:0;bottom:0;border-right:1px solid #ccc;padding:20px">
     <div role="gridcell" style="display:flex;gap:12px">
       <div style="width:45px;height:45px;border-radius:50%;overflow:hidden"><img id="avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E" width="45" height="45"></div>
-      <div><div class="_ak8q"><span id="name" title="Contato pessoal">Contato pessoal</span></div><div id="preview" class="_ak8k">Última mensagem importante</div></div>
+      <div><div class="_ak8q"><span id="name" title="Contato pessoal">Contato pessoal</span><span id="name-suffix"> (você)</span></div><div id="preview" class="_ak8k">Última mensagem importante</div></div><span id="sidebar-time">15:55</span>
     </div>
   </aside>
   <main id="main" style="margin-left:330px;padding:25px">
     <header style="display:flex;align-items:center;gap:12px;height:55px">
-      <div id="header-avatar-frame" style="width:44px;height:44px;border-radius:50%;overflow:hidden"><img id="header-avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" width="44" height="44" alt="avatar"></div>
+      <div id="header-avatar-frame" style="width:44px;height:44px;border-radius:50%;overflow:hidden;position:relative"><img id="header-avatar" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=" width="44" height="44" alt="avatar"><div id="avatar-overlay" style="position:absolute;inset:0;z-index:5;background:transparent"></div></div>
       <button data-testid="conversation-info-header-button" aria-label="Informações de contato" aria-labelledby="mock-name mock-status" style="height:45px;padding:8px 12px;border:0;background:transparent;text-align:left">
         <div><span id="mock-name" data-testid="conversation-info-header-chat-title" style="font-size:16px;font-weight:700">Grupo de colegas</span></div>
         <div><span id="mock-status" style="font-size:11px">Online agora</span></div>

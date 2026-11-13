@@ -67,7 +67,11 @@ def test_chromium_privacy_and_hover():
             assert wa.locator('#mock-name').evaluate('(el)=>getComputedStyle(el,"::after").filter').startswith('blur(')
             assert wa.locator('#mock-name').evaluate("(el)=>el.style.getPropertyValue('--nb-mask-width') === '148px'")
             assert wa.locator('#mock-name').evaluate("(el)=>!!el.style.getPropertyValue('--nb-mask-surface')")
-            assert wa.locator('#name').evaluate("(el)=>el.style.getPropertyValue('--nb-mask-width') === '118px'")
+            assert wa.locator('._ak8q').evaluate("(el)=>el.style.getPropertyValue('--nb-mask-width') === '118px'")
+            assert wa.locator('._ak8q').evaluate("(el)=>el.dataset.nbNameMask === 'true'")
+            assert wa.locator('#name-suffix').evaluate("(el)=>getComputedStyle(el).opacity === '0'")
+            assert wa.locator('#sidebar-time').evaluate("(el)=>el.dataset.nbSidebarTime === 'true'")
+            assert wa.locator('#sidebar-time').evaluate("(el)=>getComputedStyle(el).filter.startsWith('blur(')")
             assert wa.locator('#participant-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
             assert wa.locator('#header-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
             assert wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
@@ -77,10 +81,21 @@ def test_chromium_privacy_and_hover():
             wa.mouse.move(800,500)
             wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color === 'rgba(0, 0, 0, 0)'")
 
-            wa.locator('#header-avatar').hover()
+            wa.locator('#avatar-overlay').hover()
+            wa.wait_for_function("document.querySelector('#header-avatar-frame').dataset.nbAvatarHover === 'true'")
             wa.wait_for_function("getComputedStyle(document.querySelector('#header-avatar')).filter === 'none'")
             wa.mouse.move(800,500)
             wa.wait_for_function("getComputedStyle(document.querySelector('#header-avatar')).filter.startsWith('blur(')")
+
+            wa.locator('._ak8q').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#name-suffix')).opacity === '1'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#name-suffix')).opacity === '0'")
+
+            wa.locator('#sidebar-time').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#sidebar-time')).filter === 'none'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#sidebar-time')).filter.startsWith('blur(')")
 
             wa.locator('#participant-frame').hover()
             wa.wait_for_function("getComputedStyle(document.querySelector('#participant-avatar')).filter === 'none'")
@@ -100,7 +115,14 @@ def test_chromium_privacy_and_hover():
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{previews:false},blur:18}})")
             wa.wait_for_function("document.documentElement.dataset.nbPreviews === 'false'")
             assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
-            assert wa.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--nb-blur').trim()") == '18px'
+            assert wa.locator('#sidebar-time').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
+            wa.evaluate("chrome.storage.local.set({neblinaSettings:{blur:24}})")
+            wa.wait_for_function("document.documentElement.style.getPropertyValue('--nb-blur') === '24px'")
+            blur_amount = wa.locator('#header-avatar').evaluate(r"(el)=>parseFloat(getComputedStyle(el).filter.match(/blur\(([\d.]+)px\)/)[1])")
+            wa.wait_for_function(r"parseFloat(getComputedStyle(document.querySelector('#header-avatar')).filter.match(/blur\(([\d.]+)px\)/)[1]) > 15")
+            blur_amount = wa.locator('#header-avatar').evaluate(r"(el)=>parseFloat(getComputedStyle(el).filter.match(/blur\(([\d.]+)px\)/)[1])")
+            assert blur_amount > 15, 'A intensidade máxima deve afetar as fotos de perfil' 
+            assert wa.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--nb-blur').trim()") == '24px'
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{hideTabTitle:true}})")
             wa.wait_for_function("document.title.includes('Neblina')")
 

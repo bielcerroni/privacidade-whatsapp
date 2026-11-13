@@ -1,79 +1,90 @@
-/* Neblina 0.1.x — privacidade no WhatsApp Web com foco em nomes, avatares e bolhas. */
+/* Neblina 0.1.3 — nomes sem vazamento e fotos reveláveis. */
 :root {
   --nb-blur: 11px;
   --nb-duration: 160ms;
-  --nb-avatar-blur: calc(var(--nb-blur) * 1.15);
-  --nb-name-blur: calc(var(--nb-blur) * 1.25);
+  --nb-avatar-blur: clamp(7px, calc(var(--nb-blur) * .95), 23px);
+  --nb-mask-blur: clamp(4px, calc(var(--nb-blur) * .48), 13px);
 }
 
-/* Nomes: aparência discreta, baseada na cor de fundo real do item.
-   A faixa tem largura uniforme para não revelar o comprimento do contato.
-   A cor é calculada a partir do tema pelo content script, nunca pelo texto. */
-html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-text] {
+/* Uma máscara discreta e de comprimento fixo cobre o nome COMPLETO, inclusive
+   sufixos como (você) e emojis, sem aplicar filtros no botão inteiro. */
+html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-mask] {
   position: relative !important;
+  display: inline-block !important;
+  min-width: min(var(--nb-mask-width, 118px), 100%) !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   text-shadow: none !important;
 }
-html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-text]::after {
+html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-mask] * {
+  opacity: 0 !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: none !important;
+}
+html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-mask]::after {
   content: "" !important;
   pointer-events: none !important;
   position: absolute !important;
-  z-index: 1 !important;
-  left: 0 !important;
-  top: 17% !important;
-  height: 66% !important;
-  width: var(--nb-mask-width, 124px) !important;
-  max-width: 165px !important;
+  z-index: 2 !important;
+  left: 2px !important;
+  top: 19% !important;
+  height: 62% !important;
+  width: var(--nb-mask-width, 118px) !important;
+  max-width: calc(100% - 4px) !important;
+  min-width: min(65px, 100%) !important;
   border-radius: 6px !important;
-  /* Nada de retângulo cinza: usa as cores do item, apenas 8% de contraste. */
   background: linear-gradient(90deg,
-      color-mix(in srgb, var(--nb-mask-surface, #151a1c) 92%, var(--nb-mask-ink, #e5e5e5) 8%),
-      color-mix(in srgb, var(--nb-mask-surface, #151a1c) 96%, var(--nb-mask-ink, #e5e5e5) 4%) 75%,
-      var(--nb-mask-surface, #151a1c)) !important;
-  filter: blur(5px) !important;
-  opacity: .78 !important;
-  transition: opacity 130ms ease !important;
+    color-mix(in srgb, var(--nb-mask-surface,#151a1c) 79%, var(--nb-mask-ink,#ddd) 21%),
+    color-mix(in srgb, var(--nb-mask-surface,#151a1c) 87%, var(--nb-mask-ink,#ddd) 13%) 72%,
+    var(--nb-mask-surface,#151a1c)) !important;
+  filter: blur(var(--nb-mask-blur)) !important;
+  opacity: .85 !important;
+  transition: opacity 120ms ease !important;
 }
-/* Para evitar vazamento visual, o nome original fica transparente sob a faixa.
-   O hover revela o texto e remove a faixa, sem movimentar o layout. */
 html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
-  [data-nb-name-text]:hover,
-  [data-nb-name-zone]:hover [data-nb-name-text]
+  [data-nb-name-mask]:hover,
+  [data-nb-name-zone]:hover [data-nb-name-mask]
 ) {
-  color: var(--nb-mask-ink, inherit) !important;
-  -webkit-text-fill-color: var(--nb-mask-ink, currentColor) !important;
+  color: var(--nb-mask-ink,inherit) !important;
+  -webkit-text-fill-color: var(--nb-mask-ink,currentColor) !important;
 }
 html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
-  [data-nb-name-text]:hover,
-  [data-nb-name-zone]:hover [data-nb-name-text]
+  [data-nb-name-mask]:hover,
+  [data-nb-name-zone]:hover [data-nb-name-mask]
+) * {
+  opacity: 1 !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
+  [data-nb-name-mask]:hover,
+  [data-nb-name-zone]:hover [data-nb-name-mask]
 )::after {opacity:0 !important;}
 
-/* Avatares: filtro único, leve, somente nos pixels da foto.
-   Nunca mascara o próprio contêiner: não cria círculo escuro nem some com a imagem. */
+/* A foto fica DESFOCADA mas não desaparece: sem escurecer o conteúdo e sem halo.
+   Ao passar o mouse sobre qualquer sobreposição no espaço circular, o JS ativa
+   data-nb-avatar-hover mesmo quando o evento não chega ao <img>. */
 html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-image] {
-  filter: blur(5px) saturate(.95) !important;
+  filter: blur(var(--nb-avatar-blur)) saturate(.9) !important;
   transition: filter var(--nb-duration) ease !important;
 }
 html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
   [data-nb-avatar-image]:hover,
-  [data-nb-avatar-frame]:hover [data-nb-avatar-image]
+  [data-nb-avatar-image][data-nb-avatar-hover="true"],
+  [data-nb-avatar-frame]:hover [data-nb-avatar-image],
+  [data-nb-avatar-frame][data-nb-avatar-hover="true"] [data-nb-avatar-image]
 ) {filter: none !important;}
-/* Apenas avatares em background-image/SVG sem img real precisam da camada. */
-html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-frame][data-nb-avatar-kind="background"]::after {
-  content: "" !important;
-  pointer-events: none !important;
-  position: absolute !important;
-  inset: 0 !important;
-  z-index: 1 !important;
-  border-radius: inherit !important;
-  background: rgba(135, 150, 154, .035) !important;
-  -webkit-backdrop-filter: blur(5px) !important;
-  backdrop-filter: blur(5px) !important;
-  transition: opacity var(--nb-duration) ease !important;
+/* SVG (avatar padrão) e background-image sem <img> */
+html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-frame][data-nb-avatar-kind="background"] {
+  filter: blur(var(--nb-avatar-blur)) saturate(.9) !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  transition: filter var(--nb-duration) ease !important;
 }
-html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-frame][data-nb-avatar-kind="background"]:hover::after {opacity:0 !important;}
-
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
+  [data-nb-avatar-frame][data-nb-avatar-kind="background"]:hover,
+  [data-nb-avatar-frame][data-nb-avatar-kind="background"][data-nb-avatar-hover="true"]
+) {filter: none !important;}
 /* Prévia das conversas: apenas texto, não a linha inteira. */
 html[data-nb-active="true"][data-nb-previews="true"] :is(
   #pane-side [data-testid="cell-frame-secondary"],
@@ -96,6 +107,23 @@ html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] :is
   #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
   #side [data-testid="last-message"]
 ):hover { filter: none !important; }
+
+/* Horários/datas da lista, detectados inclusive quando o WhatsApp usa classes opacas. */
+html[data-nb-active="true"][data-nb-previews="true"] #pane-side :is(
+  [data-nb-sidebar-time],
+  [data-testid="cell-frame-time"],
+  [data-testid="chat-list-item-time"],
+  time
+) {
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) ease !important;
+}
+html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] #pane-side :is(
+  [data-nb-sidebar-time],
+  [data-testid="cell-frame-time"],
+  [data-testid="chat-list-item-time"],
+  time
+):hover {filter: none !important;}
 
 /* Mensagens: blur da bolha inteira para cobrir também horário, checks e metadados. */
 html[data-nb-active="true"][data-nb-messages="true"] #main [data-testid="msg-container"] {

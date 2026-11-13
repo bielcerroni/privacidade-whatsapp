@@ -87,7 +87,7 @@ MIT — veja [LICENSE](LICENSE).
 - O **campo de digitação** permanece borrado mesmo durante a digitação.
 - O **popup** recebeu revisão visual com layout mais limpo e profissional.
 
-## Correções da versão 0.1.1
+## Correções da versão 0.1.2
 
 - O nome do contato/grupo no cabeçalho é mascarado somente no texto, não no botão inteiro, eliminando o quadradinho.
 - Nomes e campo de digitação são revelados ao passar o mouse; somente o foco de teclado não revela o rascunho.
@@ -95,3 +95,16 @@ MIT — veja [LICENSE](LICENSE).
 - Grupos cujos avatares chegam dinamicamente também são detectados; imagens pequenas arredondadas e avatares com background-image são abrangidos.
 - O desfoque de mídias respeita o recorte da imagem; texto de mensagens e mídia não acumulam dois filtros.
 - Continua na linha de desenvolvimento **0.1.x**, sem lançamento 1.0.
+
+
+## Ajustes da v0.1.2
+
+- blur do nome com máscara mais difusa para esconder melhor o comprimento do contato;
+- foto de perfil dentro da conversa continua visível, porém borrada, e revela no hover;
+- blur das mensagens agora cobre a bolha inteira, incluindo horário e checks.
+
+
+### Ajuste visual da v0.1.2
+- Máscaras de nomes usam a cor de fundo do item e largura consistente, sem barras cinzas.
+- Fotos reais de perfil ficam sempre presentes com desfoque sutil de 5px; hover revela sem bloqueios.
+- A bolha da mensagem é desfocada como um todo, incluindo informações de horário e leitura.

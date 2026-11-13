@@ -1,70 +1,80 @@
-/* Neblina 0.1.x — máscara por conteúdo, sem filtros empilhados no cabeçalho.
-   Nunca aplique blur em um botão inteiro que contenha nome e foto juntos. */
+/* Neblina 0.1.x — privacidade no WhatsApp Web com foco em nomes, avatares e bolhas. */
 :root {
   --nb-blur: 11px;
   --nb-duration: 160ms;
-  --nb-avatar-blur: calc(var(--nb-blur) * 1.7);
+  --nb-avatar-blur: calc(var(--nb-blur) * 1.15);
+  --nb-name-blur: calc(var(--nb-blur) * 1.25);
 }
 
-/* Nomes: o JS marca apenas elementos cujo conteúdo é texto, e não botões ou contêineres.
-   text-shadow evita a mancha retangular que filter:blur cria em elementos pequenos. */
+/* Nomes: aparência discreta, baseada na cor de fundo real do item.
+   A faixa tem largura uniforme para não revelar o comprimento do contato.
+   A cor é calculada a partir do tema pelo content script, nunca pelo texto. */
 html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-text] {
+  position: relative !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
-  text-shadow: 0 0 calc(var(--nb-blur) * .88) rgba(202, 220, 221, .9) !important;
-  /* Instantâneo: a chegada do elemento não exibe o nome durante uma animação. */
-  transition: none !important;
+  text-shadow: none !important;
 }
+html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-text]::after {
+  content: "" !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: 0 !important;
+  top: 17% !important;
+  height: 66% !important;
+  width: var(--nb-mask-width, 124px) !important;
+  max-width: 165px !important;
+  border-radius: 6px !important;
+  /* Nada de retângulo cinza: usa as cores do item, apenas 8% de contraste. */
+  background: linear-gradient(90deg,
+      color-mix(in srgb, var(--nb-mask-surface, #151a1c) 92%, var(--nb-mask-ink, #e5e5e5) 8%),
+      color-mix(in srgb, var(--nb-mask-surface, #151a1c) 96%, var(--nb-mask-ink, #e5e5e5) 4%) 75%,
+      var(--nb-mask-surface, #151a1c)) !important;
+  filter: blur(5px) !important;
+  opacity: .78 !important;
+  transition: opacity 130ms ease !important;
+}
+/* Para evitar vazamento visual, o nome original fica transparente sob a faixa.
+   O hover revela o texto e remove a faixa, sem movimentar o layout. */
 html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
   [data-nb-name-text]:hover,
   [data-nb-name-zone]:hover [data-nb-name-text]
 ) {
-  color: inherit !important;
-  -webkit-text-fill-color: currentColor !important;
-  text-shadow: none !important;
+  color: var(--nb-mask-ink, inherit) !important;
+  -webkit-text-fill-color: var(--nb-mask-ink, currentColor) !important;
 }
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
+  [data-nb-name-text]:hover,
+  [data-nb-name-zone]:hover [data-nb-name-text]
+)::after {opacity:0 !important;}
 
-/* Proteção imediata antes da primeira varredura do DOM. */
-html[data-nb-active="true"][data-nb-names="true"] #main header [data-testid="conversation-info-header-button"] :is(span[title], span[dir="auto"], span[id]) {
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-  text-shadow: 0 0 calc(var(--nb-blur) * .88) rgba(202, 220, 221, .9) !important;
+/* Avatares: filtro único, leve, somente nos pixels da foto.
+   Nunca mascara o próprio contêiner: não cria círculo escuro nem some com a imagem. */
+html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-image] {
+  filter: blur(5px) saturate(.95) !important;
+  transition: filter var(--nb-duration) ease !important;
 }
-html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] #main header [data-testid="conversation-info-header-button"]:hover :is(span[title], span[dir="auto"], span[id]) {
-  color: inherit !important;
-  -webkit-text-fill-color: currentColor !important;
-  text-shadow: none !important;
-}
-
-/* Fotos e avatares de pessoas/grupos: o blur fica dentro da moldura circular.
-   Backdrop-filter não vaza uma aura luminosa para a conversa. */
-html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-frame]::after {
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
+  [data-nb-avatar-image]:hover,
+  [data-nb-avatar-frame]:hover [data-nb-avatar-image]
+) {filter: none !important;}
+/* Apenas avatares em background-image/SVG sem img real precisam da camada. */
+html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-frame][data-nb-avatar-kind="background"]::after {
   content: "" !important;
+  pointer-events: none !important;
   position: absolute !important;
   inset: 0 !important;
-  z-index: 4 !important;
-  pointer-events: none !important;
-  border-radius: 50% !important;
-  background: rgba(13, 25, 29, .28) !important;
-  -webkit-backdrop-filter: blur(var(--nb-avatar-blur)) saturate(.60) !important;
-  backdrop-filter: blur(var(--nb-avatar-blur)) saturate(.60) !important;
-  opacity: 1;
-  transition: opacity var(--nb-duration) !important;
+  z-index: 1 !important;
+  border-radius: inherit !important;
+  background: rgba(135, 150, 154, .035) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  backdrop-filter: blur(5px) !important;
+  transition: opacity var(--nb-duration) ease !important;
 }
-html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-frame]:hover::after {
-  opacity: 0 !important;
-}
-/* Fallback para imagens sem contêiner confiável. */
-html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-image] {
-  filter: blur(var(--nb-avatar-blur)) saturate(.75) !important;
-  clip-path: circle(50% at 50% 50%) !important;
-  transition: filter var(--nb-duration) !important;
-}
-html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-image]:hover {
-  filter: none !important;
-}
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-frame][data-nb-avatar-kind="background"]:hover::after {opacity:0 !important;}
 
-/* Prévia das conversas: apenas texto, não o contêiner inteiro. */
+/* Prévia das conversas: apenas texto, não a linha inteira. */
 html[data-nb-active="true"][data-nb-previews="true"] :is(
   #pane-side [data-testid="cell-frame-secondary"],
   #pane-side [data-testid="last-msg-status"],
@@ -85,40 +95,18 @@ html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] :is
   #pane-side [role="row"] ._ak8k,
   #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
   #side [data-testid="last-message"]
-):hover {
-  filter: none !important;
-}
-
-/* Mensagens: texto antes de bolhas inteiras, para não duplicar blur nas mídias. */
-html[data-nb-active="true"][data-nb-messages="true"] :is(
-  #main [data-testid="msg-container"] .selectable-text,
-  #main [data-testid="msg-container"] [data-testid="message-text"],
-  #main [data-testid="msg-container"] [data-testid="msg-text"],
-  #main .message-in .selectable-text,
-  #main .message-out .selectable-text,
-  #main .copyable-text:not(:has(.selectable-text))
-) {
-  filter: blur(var(--nb-blur)) !important;
-  transition: filter var(--nb-duration) !important;
-}
-html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] :is(
-  #main [data-testid="msg-container"] .selectable-text,
-  #main [data-testid="msg-container"] [data-testid="message-text"],
-  #main [data-testid="msg-container"] [data-testid="msg-text"],
-  #main .message-in .selectable-text,
-  #main .message-out .selectable-text,
-  #main .copyable-text:not(:has(.selectable-text))
 ):hover { filter: none !important; }
-/* Fallback: somente mensagens sem texto ou mídia conhecida. */
-html[data-nb-active="true"][data-nb-messages="true"] #main [data-testid="msg-container"]:not(:has(.selectable-text, [data-testid="message-text"], [data-testid="msg-text"], img, video, canvas)) {
+
+/* Mensagens: blur da bolha inteira para cobrir também horário, checks e metadados. */
+html[data-nb-active="true"][data-nb-messages="true"] #main [data-testid="msg-container"] {
   filter: blur(var(--nb-blur)) !important;
   transition: filter var(--nb-duration) !important;
 }
-html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] #main [data-testid="msg-container"]:not(:has(.selectable-text, [data-testid="message-text"], [data-testid="msg-text"], img, video, canvas)):hover {
+html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] #main [data-testid="msg-container"]:hover {
   filter: none !important;
 }
 
-/* Fotos e vídeos: bordas recortadas para impedir vazamento do filtro. */
+/* Mídias continuam com blur próprio quando esse controle também estiver ativo. */
 html[data-nb-active="true"][data-nb-media="true"] :is(
   #main [data-testid="msg-container"] img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
   #main [data-testid="msg-container"] video,
@@ -152,7 +140,7 @@ html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
   [data-testid="msg-container"] [style*="background-image"]
 ):hover { filter: none !important; }
 
-/* Campo de digitação: o hover revela; o foco sozinho nunca revela. */
+/* Campo de digitação: hover revela; foco sozinho não revela. */
 html[data-nb-active="true"][data-nb-composer="true"] :is(
   #main footer [contenteditable="true"],
   #main [data-testid="conversation-compose-box-input"][contenteditable="true"],
@@ -169,7 +157,6 @@ html[data-nb-active="true"][data-nb-composer="true"][data-nb-reveal="hover"] :is
   #main .lexical-rich-text-input:not(:has([contenteditable="true"]))
 ):hover { filter: none !important; }
 
-/* Escudo (independente do WhatsApp). */
 html[data-nb-active="true"][data-nb-shield="true"] #app {
   filter: blur(22px) grayscale(.7) !important;
   pointer-events: none !important;
@@ -200,10 +187,7 @@ html[data-nb-active="true"][data-nb-shield="true"] #app {
 #nb-privacy-shield .nb-shield-eyebrow{font-size:12px;letter-spacing:4px;color:#7BE5C9;font-weight:800}
 #nb-privacy-shield h1{font-size:27px !important;line-height:1.2!important;letter-spacing:-.8px!important;margin:14px 0 8px!important;color:#fff!important}
 #nb-privacy-shield p{font-size:14px!important;color:#ACCAC7!important;line-height:1.6!important;margin:0 0 22px!important}
-#nb-privacy-shield button{
-  appearance:none;border:0!important;border-radius:14px!important;padding:14px 18px!important;
-  background:#24AF92!important;color:#042B2A!important;font-weight:800!important;font-size:14px!important;
-  cursor:pointer!important;box-shadow:0 10px 30px #0004!important;
-}
+#nb-privacy-shield button{appearance:none;border:0!important;border-radius:14px!important;padding:14px 18px!important;background:#24AF92!important;color:#042B2A!important;font-weight:800!important;font-size:14px!important;cursor:pointer!important;box-shadow:0 10px 30px #0004!important}
 #nb-privacy-shield small{display:block!important;margin-top:15px!important;color:#9CB8B7!important;font-size:12px!important}
+
 @media(prefers-reduced-motion:reduce){html[data-nb-active="true"] #app *,html[data-nb-active="true"] #pane-side *{transition:none!important}}

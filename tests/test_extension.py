@@ -58,37 +58,45 @@ def test_chromium_privacy_and_hover():
             wa = context.new_page()
             setup_wa(wa)
             assert 'Neblina' not in wa.title()
-            assert wa.locator('#message-text').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#message-meta').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
             assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
             assert wa.locator('#media').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
-            assert wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Bolha não deve ser borrada junto com imagem'
-            assert wa.locator('[data-testid="conversation-info-header-button"]').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Não borramos o botão inteiro'
+            assert wa.locator('[data-testid="conversation-info-header-button"]').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
             assert wa.locator('#mock-name').evaluate('(el)=>getComputedStyle(el).color') == 'rgba(0, 0, 0, 0)'
-            assert wa.locator('#participant-frame').evaluate('(el)=>getComputedStyle(el,"::after").backdropFilter').startswith('blur(')
-            assert wa.locator('#avatar').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Não deve haver filtros empilhados no avatar'
+            assert wa.locator('#mock-name').evaluate('(el)=>getComputedStyle(el,"::after").filter').startswith('blur(')
+            assert wa.locator('#mock-name').evaluate("(el)=>el.style.getPropertyValue('--nb-mask-width') === '148px'")
+            assert wa.locator('#mock-name').evaluate("(el)=>!!el.style.getPropertyValue('--nb-mask-surface')")
+            assert wa.locator('#name').evaluate("(el)=>el.style.getPropertyValue('--nb-mask-width') === '118px'")
+            assert wa.locator('#participant-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#header-avatar').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
             assert wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
 
-            # Revelar nome pelo hover do botão, mesmo que o texto esteja em spans internos.
             wa.locator('[data-testid="conversation-info-header-button"]').hover(position={'x':5,'y':6})
             wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color !== 'rgba(0, 0, 0, 0)'")
             wa.mouse.move(800,500)
             wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color === 'rgba(0, 0, 0, 0)'")
 
-            # Fotos de participantes/grupos se revelam no hover e voltam a borrar fora.
-            wa.locator('#participant-frame').hover()
-            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-frame'),'::after').opacity === '0'")
+            wa.locator('#header-avatar').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#header-avatar')).filter === 'none'")
             wa.mouse.move(800,500)
-            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-frame'),'::after').opacity === '1'")
+            wa.wait_for_function("getComputedStyle(document.querySelector('#header-avatar')).filter.startsWith('blur(')")
 
-            # O campo permanece protegido no foco e muda exclusivamente pelo hover.
+            wa.locator('#participant-frame').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-avatar')).filter === 'none'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-avatar')).filter.startsWith('blur(')")
+
+            wa.locator('#message').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#message')).filter === 'none'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#message')).filter.startsWith('blur(')")
+
             wa.locator('#editor').focus()
             assert wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
             wa.locator('#editor').hover()
             wa.wait_for_function("getComputedStyle(document.querySelector('#editor')).filter === 'none'")
-            wa.mouse.move(800,500)
-            wa.wait_for_function("getComputedStyle(document.querySelector('#editor')).filter.startsWith('blur(')")
 
-            # Configurações persistidas aplicam efeito imediatamente.
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{previews:false},blur:18}})")
             wa.wait_for_function("document.documentElement.dataset.nbPreviews === 'false'")
             assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
@@ -96,7 +104,6 @@ def test_chromium_privacy_and_hover():
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{hideTabTitle:true}})")
             wa.wait_for_function("document.title.includes('Neblina')")
 
-            # Escudo não prejudica a saída de emergência.
             wa.evaluate('chrome.storage.local.set({neblinaSettings:{shield:true}})')
             wa.locator('#nb-privacy-shield').wait_for(state='visible')
             wa.locator('#nb-unlock').click()
@@ -120,13 +127,14 @@ def test_dynamic_group_avatar_and_popup():
               frame.id = 'new-group-frame';
               frame.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden';
               const img = document.createElement('img');
+              img.id='new-group-img';
               img.width=40; img.height=40;
               img.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
               frame.append(img);
               document.querySelector('#main').append(frame);
             }""")
             wa.wait_for_function("document.querySelector('#new-group-frame')?.dataset.nbAvatarFrame === 'true'")
-            assert wa.locator('#new-group-frame').evaluate('(el)=>getComputedStyle(el,"::after").backdropFilter').startswith('blur(')
+            assert wa.locator('#new-group-img').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
 
             popup = context.new_page()
             popup.set_content((ROOT/'popup'/'index.html').read_text(encoding='utf-8'))

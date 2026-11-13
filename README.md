@@ -9,7 +9,7 @@ Extensão **independente e gratuita** para Google Chrome (Manifest V3) que desfo
 - **Proteção por categoria:** mensagens, últimas mensagens, nomes/grupos, fotos de perfil, mídias e campo de digitação.
 - **Três perfis:** Total, Equilibrado e Lista. É possível personalizar qualquer configuração.
 - **Controle de intensidade:** desfoque de 4 até 24 pixels.
-- **Revelação ao passar o mouse:** opcional para mensagens, nomes, prévias e mídias; o campo de digitação permanece oculto mesmo com foco.
+- **Revelação ao passar o mouse:** opcional para mensagens, nomes, prévias e mídias; o campo de digitação permanece oculto quando está em foco e pode ser revelado ao passar o mouse, quando a opção de revelação está ativada.
 - **Modo escudo:** overlay na página para ocultar tudo com um clique.
 - **Título neutro da aba:** funcionalidade opcional, desativada por padrão, para ocultar o nome no navegador.
 - **Atalho de teclado:** `Alt + Shift + B` ativa/desativa a proteção.
@@ -86,3 +86,12 @@ MIT — veja [LICENSE](LICENSE).
 - O seletor de **nomes e grupos** foi reforçado para o cabeçalho atual do WhatsApp Web.
 - O **campo de digitação** permanece borrado mesmo durante a digitação.
 - O **popup** recebeu revisão visual com layout mais limpo e profissional.
+
+## Correções da versão 0.1.1
+
+- O nome do contato/grupo no cabeçalho é mascarado somente no texto, não no botão inteiro, eliminando o quadradinho.
+- Nomes e campo de digitação são revelados ao passar o mouse; somente o foco de teclado não revela o rascunho.
+- Avatares de contatos, grupos e participantes são protegidos por uma máscara circular interna, sem halo fora da foto.
+- Grupos cujos avatares chegam dinamicamente também são detectados; imagens pequenas arredondadas e avatares com background-image são abrangidos.
+- O desfoque de mídias respeita o recorte da imagem; texto de mensagens e mídia não acumulam dois filtros.
+- Continua na linha de desenvolvimento **0.1.x**, sem lançamento 1.0.

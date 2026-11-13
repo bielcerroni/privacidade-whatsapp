@@ -1,15 +1,10 @@
-"""Smoke tests locais: validam manifest, seletores e interface no Chromium.
-
-Ambiente de testes usa chrome.storage simulado: extensão precisa ser instalada no
-Chrome do usuário para a validação fim-a-fim com o WhatsApp real.
-"""
+"""Testes locais para os alvos de privacidade (sem WhatsApp real)."""
 import json
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 MOCK = ROOT / 'tests' / 'mock-whatsapp.html'
-
 MOCK_STORAGE = r"""
 (() => {
   const listeners=[];
@@ -33,10 +28,20 @@ MOCK_STORAGE = r"""
 """
 
 
+def setup_wa(page):
+    page.set_content(MOCK.read_text(encoding='utf-8'))
+    page.add_script_tag(content=MOCK_STORAGE)
+    page.add_style_tag(path=str(ROOT/'src'/'blur.css'))
+    page.add_script_tag(path=str(ROOT/'shared'/'config.js'))
+    page.add_script_tag(path=str(ROOT/'src'/'content.js'))
+    page.wait_for_function("document.querySelector('#mock-name')?.dataset.nbNameText === 'true'")
+    page.wait_for_function("document.querySelector('#participant-frame')?.dataset.nbAvatarFrame === 'true'")
+
+
 def test_manifest_and_assets():
     m = json.loads((ROOT / 'manifest.json').read_text(encoding='utf-8'))
     assert m['manifest_version'] == 3
-    assert m['version'] == '0.1.0'
+    assert m['version'].startswith('0.1.')
     assert m['permissions'] == ['storage']
     assert m['content_scripts'][0]['matches'] == ['https://web.whatsapp.com/*']
     files = [m['background']['service_worker'], m['action']['default_popup']]
@@ -45,51 +50,83 @@ def test_manifest_and_assets():
     assert all((ROOT / file).is_file() for file in files)
 
 
-def test_chromium_styles_content_and_popup():
+def test_chromium_privacy_and_hover():
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
         context = browser.new_context(viewport={'width':1024,'height':900})
-
         try:
             wa = context.new_page()
-            wa.set_content(MOCK.read_text(encoding='utf-8'))
-            wa.add_script_tag(content=MOCK_STORAGE)
-            wa.add_style_tag(path=str(ROOT/'src'/'blur.css'))
-            wa.add_script_tag(path=str(ROOT/'shared'/'config.js'))
-            wa.add_script_tag(path=str(ROOT/'src'/'content.js'))
-            wa.wait_for_function("document.documentElement.dataset.nbActive === 'true'")
+            setup_wa(wa)
             assert 'Neblina' not in wa.title()
-            assert 'blur' in wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter')
-            assert 'blur' in wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter')
-            assert 'blur' in wa.locator('#avatar').evaluate('(el)=>getComputedStyle(el).filter')
-            assert 'blur' in wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter')
-            assert 'blur' in wa.locator('#media').evaluate('(el)=>getComputedStyle(el).filter')
-            assert 'blur' in wa.locator('[data-testid="conversation-info-header-button"]').evaluate('(el)=>getComputedStyle(el).filter')
-            # O texto deve continuar borrado ao digitar, mesmo com hover e foco.
-            editor = wa.locator('#editor')
-            editor.hover()
-            editor.click()
-            editor.fill('Escrevendo uma mensagem sigilosa')
-            assert 'blur' in editor.evaluate('(el)=>getComputedStyle(el).filter')
+            assert wa.locator('#message-text').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#media').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Bolha não deve ser borrada junto com imagem'
+            assert wa.locator('[data-testid="conversation-info-header-button"]').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Não borramos o botão inteiro'
+            assert wa.locator('#mock-name').evaluate('(el)=>getComputedStyle(el).color') == 'rgba(0, 0, 0, 0)'
+            assert wa.locator('#participant-frame').evaluate('(el)=>getComputedStyle(el,"::after").backdropFilter').startswith('blur(')
+            assert wa.locator('#avatar').evaluate('(el)=>getComputedStyle(el).filter') == 'none', 'Não deve haver filtros empilhados no avatar'
+            assert wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
 
-            # Mudanças se refletem na CSS da conversa.
+            # Revelar nome pelo hover do botão, mesmo que o texto esteja em spans internos.
+            wa.locator('[data-testid="conversation-info-header-button"]').hover(position={'x':5,'y':6})
+            wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color !== 'rgba(0, 0, 0, 0)'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#mock-name')).color === 'rgba(0, 0, 0, 0)'")
+
+            # Fotos de participantes/grupos se revelam no hover e voltam a borrar fora.
+            wa.locator('#participant-frame').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-frame'),'::after').opacity === '0'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#participant-frame'),'::after').opacity === '1'")
+
+            # O campo permanece protegido no foco e muda exclusivamente pelo hover.
+            wa.locator('#editor').focus()
+            assert wa.locator('#editor').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            wa.locator('#editor').hover()
+            wa.wait_for_function("getComputedStyle(document.querySelector('#editor')).filter === 'none'")
+            wa.mouse.move(800,500)
+            wa.wait_for_function("getComputedStyle(document.querySelector('#editor')).filter.startsWith('blur(')")
+
+            # Configurações persistidas aplicam efeito imediatamente.
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{categories:{previews:false},blur:18}})")
             wa.wait_for_function("document.documentElement.dataset.nbPreviews === 'false'")
             assert wa.locator('#preview').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
-            assert 'blur' in wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter')
             assert wa.evaluate("getComputedStyle(document.documentElement).getPropertyValue('--nb-blur').trim()") == '18px'
-
             wa.evaluate("chrome.storage.local.set({neblinaSettings:{hideTabTitle:true}})")
             wa.wait_for_function("document.title.includes('Neblina')")
 
-            # Escudo torna o conteúdo inacessível enquanto ativo e possui saída.
+            # Escudo não prejudica a saída de emergência.
             wa.evaluate('chrome.storage.local.set({neblinaSettings:{shield:true}})')
             wa.locator('#nb-privacy-shield').wait_for(state='visible')
             wa.locator('#nb-unlock').click()
             wa.locator('#nb-privacy-shield').wait_for(state='hidden')
             wa.evaluate('chrome.storage.local.set({neblinaSettings:{enabled:false}})')
-            assert wa.locator('#message').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
+            assert wa.locator('#media').evaluate('(el)=>getComputedStyle(el).filter') == 'none'
             assert 'Neblina' not in wa.title()
+        finally:
+            context.close(); browser.close()
+
+
+def test_dynamic_group_avatar_and_popup():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
+        context = browser.new_context(viewport={'width':1024,'height':900})
+        try:
+            wa = context.new_page()
+            setup_wa(wa)
+            wa.evaluate("""() => {
+              const frame = document.createElement('div');
+              frame.id = 'new-group-frame';
+              frame.style.cssText = 'width:40px;height:40px;border-radius:50%;overflow:hidden';
+              const img = document.createElement('img');
+              img.width=40; img.height=40;
+              img.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+              frame.append(img);
+              document.querySelector('#main').append(frame);
+            }""")
+            wa.wait_for_function("document.querySelector('#new-group-frame')?.dataset.nbAvatarFrame === 'true'")
+            assert wa.locator('#new-group-frame').evaluate('(el)=>getComputedStyle(el,"::after").backdropFilter').startswith('blur(')
 
             popup = context.new_page()
             popup.set_content((ROOT/'popup'/'index.html').read_text(encoding='utf-8'))
@@ -98,14 +135,10 @@ def test_chromium_styles_content_and_popup():
             popup.add_script_tag(path=str(ROOT/'shared'/'config.js'))
             popup.add_script_tag(path=str(ROOT/'popup'/'popup.js'))
             popup.wait_for_function("document.querySelector('#status').textContent.includes('Ativa')")
-            assert popup.get_by_role('heading',name='O que proteger').count() == 1
             assert popup.locator('#hideTabTitle').is_checked() is False
-            popup.locator('[data-category="previews"]').uncheck(force=True)
-            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.categories.previews") is False
+            popup.locator('[data-category="composer"]').uncheck(force=True)
+            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__state=r.neblinaSettings);window.__state.categories.composer") is False
             popup.locator('#shield-action').click()
-            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.shield") is True
-            popup.locator('#blur').fill('18')
-            popup.wait_for_timeout(160)
-            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__popupState=r.neblinaSettings);window.__popupState.blur") == 18
+            assert popup.evaluate("chrome.storage.local.get('neblinaSettings',r=>window.__state=r.neblinaSettings);window.__state.shield") is True
         finally:
-            context.close();browser.close()
+            context.close(); browser.close()

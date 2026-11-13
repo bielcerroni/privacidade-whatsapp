@@ -1,33 +1,70 @@
-/* Neblina v0.1 — filtros de privacidade isolados em web.whatsapp.com.
-   Os seletores semânticos têm prioridade; fallbacks cobrem versões anteriores. */
-:root { --nb-blur: 11px; --nb-duration: 160ms; }
+/* Neblina 0.1.x — máscara por conteúdo, sem filtros empilhados no cabeçalho.
+   Nunca aplique blur em um botão inteiro que contenha nome e foto juntos. */
+:root {
+  --nb-blur: 11px;
+  --nb-duration: 160ms;
+  --nb-avatar-blur: calc(var(--nb-blur) * 1.7);
+}
 
-/* messages */
-html[data-nb-active="true"][data-nb-messages="true"] :is(
-  #main [data-testid="msg-container"],
-  #main .message-in .selectable-text,
-  #main .message-out .selectable-text,
-  #main [data-testid="message-text"],
-  #main [data-testid="msg-text"],
-  #main .message-in .copyable-text,
-  #main .message-out .copyable-text
+/* Nomes: o JS marca apenas elementos cujo conteúdo é texto, e não botões ou contêineres.
+   text-shadow evita a mancha retangular que filter:blur cria em elementos pequenos. */
+html[data-nb-active="true"][data-nb-names="true"] [data-nb-name-text] {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 0 calc(var(--nb-blur) * .88) rgba(202, 220, 221, .9) !important;
+  /* Instantâneo: a chegada do elemento não exibe o nome durante uma animação. */
+  transition: none !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
+  [data-nb-name-text]:hover,
+  [data-nb-name-zone]:hover [data-nb-name-text]
 ) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
-}
-html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] :is(
-  #main [data-testid="msg-container"],
-  #main .message-in .selectable-text,
-  #main .message-out .selectable-text,
-  #main [data-testid="message-text"],
-  #main [data-testid="msg-text"],
-  #main .message-in .copyable-text,
-  #main .message-out .copyable-text
-):hover {
-  filter: blur(0) grayscale(0) !important;
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
 }
 
-/* previews */
+/* Proteção imediata antes da primeira varredura do DOM. */
+html[data-nb-active="true"][data-nb-names="true"] #main header [data-testid="conversation-info-header-button"] :is(span[title], span[dir="auto"], span[id]) {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 0 calc(var(--nb-blur) * .88) rgba(202, 220, 221, .9) !important;
+}
+html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] #main header [data-testid="conversation-info-header-button"]:hover :is(span[title], span[dir="auto"], span[id]) {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+/* Fotos e avatares de pessoas/grupos: o blur fica dentro da moldura circular.
+   Backdrop-filter não vaza uma aura luminosa para a conversa. */
+html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-frame]::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 4 !important;
+  pointer-events: none !important;
+  border-radius: 50% !important;
+  background: rgba(13, 25, 29, .28) !important;
+  -webkit-backdrop-filter: blur(var(--nb-avatar-blur)) saturate(.60) !important;
+  backdrop-filter: blur(var(--nb-avatar-blur)) saturate(.60) !important;
+  opacity: 1;
+  transition: opacity var(--nb-duration) !important;
+}
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-frame]:hover::after {
+  opacity: 0 !important;
+}
+/* Fallback para imagens sem contêiner confiável. */
+html[data-nb-active="true"][data-nb-avatars="true"] [data-nb-avatar-image] {
+  filter: blur(var(--nb-avatar-blur)) saturate(.75) !important;
+  clip-path: circle(50% at 50% 50%) !important;
+  transition: filter var(--nb-duration) !important;
+}
+html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] [data-nb-avatar-image]:hover {
+  filter: none !important;
+}
+
+/* Prévia das conversas: apenas texto, não o contêiner inteiro. */
 html[data-nb-active="true"][data-nb-previews="true"] :is(
   #pane-side [data-testid="cell-frame-secondary"],
   #pane-side [data-testid="last-msg-status"],
@@ -37,8 +74,8 @@ html[data-nb-active="true"][data-nb-previews="true"] :is(
   #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
   #side [data-testid="last-message"]
 ) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) !important;
 }
 html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] :is(
   #pane-side [data-testid="cell-frame-secondary"],
@@ -49,100 +86,45 @@ html[data-nb-active="true"][data-nb-previews="true"][data-nb-reveal="hover"] :is
   #pane-side [data-testid="chatlist-row"] [data-testid="last-message"],
   #side [data-testid="last-message"]
 ):hover {
-  filter: blur(0) grayscale(0) !important;
+  filter: none !important;
 }
 
-/* names */
-html[data-nb-active="true"][data-nb-names="true"] :is(
-  #pane-side [data-testid="cell-frame-title"],
-  #pane-side [role="gridcell"] ._ak8q,
-  #pane-side [role="row"] ._ak8q,
-  #pane-side [role="gridcell"] span[title],
-  #pane-side [data-testid="chatlist-row"] span[title],
-  #main header span[title],
-  #main header [data-testid="conversation-title"],
-  #main header [data-testid="conversation-info-header-chat-title"],
-  #main header [data-testid="conversation-info-header-chat-title"] *,
-  #main header [data-testid="conversation-info-header-button"],
-  #main header [data-testid="conversation-info-header-button"] *,
-  #main header [aria-label="Informações de contato"],
-  #main header [aria-label="Informações de contato"] *,
-  #main header [aria-labelledby],
-  #main header [aria-labelledby] *,
-  #main [data-testid="author"],
-  #side [data-testid="contact-name"],
-  [data-testid="conversation-info-header"] span[title],
-  [data-testid="chat-subtitle"] span[title]
+/* Mensagens: texto antes de bolhas inteiras, para não duplicar blur nas mídias. */
+html[data-nb-active="true"][data-nb-messages="true"] :is(
+  #main [data-testid="msg-container"] .selectable-text,
+  #main [data-testid="msg-container"] [data-testid="message-text"],
+  #main [data-testid="msg-container"] [data-testid="msg-text"],
+  #main .message-in .selectable-text,
+  #main .message-out .selectable-text,
+  #main .copyable-text:not(:has(.selectable-text))
 ) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) !important;
 }
-html[data-nb-active="true"][data-nb-names="true"][data-nb-reveal="hover"] :is(
-  #pane-side [data-testid="cell-frame-title"],
-  #pane-side [role="gridcell"] ._ak8q,
-  #pane-side [role="row"] ._ak8q,
-  #pane-side [role="gridcell"] span[title],
-  #pane-side [data-testid="chatlist-row"] span[title],
-  #main header span[title],
-  #main header [data-testid="conversation-title"],
-  #main header [data-testid="conversation-info-header-chat-title"],
-  #main header [data-testid="conversation-info-header-chat-title"] *,
-  #main header [data-testid="conversation-info-header-button"],
-  #main header [data-testid="conversation-info-header-button"] *,
-  #main header [aria-label="Informações de contato"],
-  #main header [aria-label="Informações de contato"] *,
-  #main header [aria-labelledby],
-  #main header [aria-labelledby] *,
-  #main [data-testid="author"],
-  #side [data-testid="contact-name"],
-  [data-testid="conversation-info-header"] span[title],
-  [data-testid="chat-subtitle"] span[title]
-):hover {
-  filter: blur(0) grayscale(0) !important;
+html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] :is(
+  #main [data-testid="msg-container"] .selectable-text,
+  #main [data-testid="msg-container"] [data-testid="message-text"],
+  #main [data-testid="msg-container"] [data-testid="msg-text"],
+  #main .message-in .selectable-text,
+  #main .message-out .selectable-text,
+  #main .copyable-text:not(:has(.selectable-text))
+):hover { filter: none !important; }
+/* Fallback: somente mensagens sem texto ou mídia conhecida. */
+html[data-nb-active="true"][data-nb-messages="true"] #main [data-testid="msg-container"]:not(:has(.selectable-text, [data-testid="message-text"], [data-testid="msg-text"], img, video, canvas)) {
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) !important;
+}
+html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] #main [data-testid="msg-container"]:not(:has(.selectable-text, [data-testid="message-text"], [data-testid="msg-text"], img, video, canvas)):hover {
+  filter: none !important;
 }
 
-/* avatars */
-html[data-nb-active="true"][data-nb-avatars="true"] :is(
-  #pane-side [data-testid="avatar"],
-  #pane-side [role="gridcell"] img,
-  #pane-side [role="row"] img,
-  #pane-side [data-testid="chatlist-row"] img,
-  #main header img,
-  #side header img,
-  [data-testid="contact-info-panel"] img,
-  [data-testid="avatar"] img,
-  [data-testid="default-user"],
-  #main [data-testid="avatar"],
-  #side [role="gridcell"] img
-) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
-}
-html[data-nb-active="true"][data-nb-avatars="true"][data-nb-reveal="hover"] :is(
-  #pane-side [data-testid="avatar"],
-  #pane-side [role="gridcell"] img,
-  #pane-side [role="row"] img,
-  #pane-side [data-testid="chatlist-row"] img,
-  #main header img,
-  #side header img,
-  [data-testid="contact-info-panel"] img,
-  [data-testid="avatar"] img,
-  [data-testid="default-user"],
-  #main [data-testid="avatar"],
-  #side [role="gridcell"] img
-):hover {
-  filter: blur(0) grayscale(0) !important;
-}
-
-/* media */
+/* Fotos e vídeos: bordas recortadas para impedir vazamento do filtro. */
 html[data-nb-active="true"][data-nb-media="true"] :is(
-  #main [data-testid="msg-container"] img,
+  #main [data-testid="msg-container"] img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
   #main [data-testid="msg-container"] video,
   #main [data-testid="msg-container"] canvas,
-  #main .message-in img,
-  #main .message-out img,
-  #main .message-in video,
-  #main .message-out video,
+  #main .message-in img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
+  #main .message-out img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
   [data-testid="media-viewer"] img,
   [data-testid="media-viewer"] video,
   [data-testid="media-gallery"] img,
@@ -151,17 +133,16 @@ html[data-nb-active="true"][data-nb-media="true"] :is(
   [role="listitem"] [style*="background-image"],
   [data-testid="msg-container"] [style*="background-image"]
 ) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
+  filter: blur(var(--nb-blur)) saturate(.85) !important;
+  clip-path: inset(0 round 8px) !important;
+  transition: filter var(--nb-duration) !important;
 }
 html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
-  #main [data-testid="msg-container"] img,
+  #main [data-testid="msg-container"] img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
   #main [data-testid="msg-container"] video,
   #main [data-testid="msg-container"] canvas,
-  #main .message-in img,
-  #main .message-out img,
-  #main .message-in video,
-  #main .message-out video,
+  #main .message-in img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
+  #main .message-out img:not([data-nb-avatar-image]):not([data-nb-avatar-frame] img),
   [data-testid="media-viewer"] img,
   [data-testid="media-viewer"] video,
   [data-testid="media-gallery"] img,
@@ -169,29 +150,26 @@ html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
   [role="dialog"] video,
   [role="listitem"] [style*="background-image"],
   [data-testid="msg-container"] [style*="background-image"]
-):hover {
-  filter: blur(0) grayscale(0) !important;
-}
+):hover { filter: none !important; }
 
-/* composer */
+/* Campo de digitação: o hover revela; o foco sozinho nunca revela. */
 html[data-nb-active="true"][data-nb-composer="true"] :is(
   #main footer [contenteditable="true"],
-  #main footer [role="textbox"],
-  #main footer .lexical-rich-text-input,
-  #main [data-testid="conversation-compose-box-input"],
-  #main [data-testid="conversation-compose-box-input"] *,
-  #main footer [data-tab="10"],
-  #main footer [data-tab="10"] *,
-  #main .lexical-rich-text-input,
-  #main .lexical-rich-text-input *
+  #main [data-testid="conversation-compose-box-input"][contenteditable="true"],
+  #main footer [role="textbox"]:not(:has([contenteditable="true"])),
+  #main .lexical-rich-text-input:not(:has([contenteditable="true"]))
 ) {
-  filter: blur(var(--nb-blur)) grayscale(.25) !important;
-  transition: filter var(--nb-duration) ease-out !important;
+  filter: blur(var(--nb-blur)) !important;
+  transition: filter var(--nb-duration) !important;
 }
-/* O compositor não revela por hover nem por foco: protege inclusive durante a digitação.
-   Para escrever com texto visível, desative apenas a categoria "Campo de digitação". */
+html[data-nb-active="true"][data-nb-composer="true"][data-nb-reveal="hover"] :is(
+  #main footer [contenteditable="true"],
+  #main [data-testid="conversation-compose-box-input"][contenteditable="true"],
+  #main footer [role="textbox"]:not(:has([contenteditable="true"])),
+  #main .lexical-rich-text-input:not(:has([contenteditable="true"]))
+):hover { filter: none !important; }
 
-/* Escudo: camada totalmente separada do app, com um botão de saída acessível. */
+/* Escudo (independente do WhatsApp). */
 html[data-nb-active="true"][data-nb-shield="true"] #app {
   filter: blur(22px) grayscale(.7) !important;
   pointer-events: none !important;
@@ -228,5 +206,4 @@ html[data-nb-active="true"][data-nb-shield="true"] #app {
   cursor:pointer!important;box-shadow:0 10px 30px #0004!important;
 }
 #nb-privacy-shield small{display:block!important;margin-top:15px!important;color:#9CB8B7!important;font-size:12px!important}
-
 @media(prefers-reduced-motion:reduce){html[data-nb-active="true"] #app *,html[data-nb-active="true"] #pane-side *{transition:none!important}}

@@ -273,6 +273,55 @@
     setHoveredAvatar(match);
   }
 
+
+  let hoveredMedia = null;
+  let hoveredMediaMessage = null;
+
+  function setHoveredMedia(next, message) {
+    if (hoveredMedia !== next) {
+      if (hoveredMedia) delete hoveredMedia.dataset.nbMediaHover;
+      hoveredMedia = next;
+      if (hoveredMedia) hoveredMedia.dataset.nbMediaHover = 'true';
+    }
+    if (hoveredMediaMessage !== message) {
+      if (hoveredMediaMessage) delete hoveredMediaMessage.dataset.nbMessageHover;
+      hoveredMediaMessage = message;
+      if (hoveredMediaMessage) hoveredMediaMessage.dataset.nbMessageHover = 'true';
+    }
+  }
+
+  // O botão de opções do WhatsApp às vezes cobre a imagem e intercepta o hover.
+  // Usamos apenas a geometria dos elementos; não acessamos conteúdo da mídia.
+  function updateMediaHover(x, y) {
+    if (!current.enabled || !current.revealOnHover ||
+        (!current.categories.media && !current.categories.messages)) {
+      setHoveredMedia(null, null);
+      return;
+    }
+    const main = document.getElementById('main');
+    if (!main) {setHoveredMedia(null, null); return;}
+    const bounds = main.getBoundingClientRect();
+    if (x < bounds.left || x > bounds.right || y < bounds.top || y > bounds.bottom) {
+      setHoveredMedia(null, null);
+      return;
+    }
+    let next = null;
+    let area = Infinity;
+    const candidates = main.querySelectorAll([
+      '#main [data-testid="msg-container"] :is(img, video, canvas, [data-testid*="sticker"], [data-testid*="emoji"])',
+      '#main :is(.message-in, .message-out) :is([data-testid*="sticker"], [data-testid*="emoji"])'
+    ].join(', '));
+    for (const node of candidates) {
+      if (node.matches('[data-nb-avatar-image]') || node.closest('[data-nb-avatar-frame]')) continue;
+      const rect = node.getBoundingClientRect();
+      if (rect.width < 12 || rect.height < 12 || rect.width > 600 || rect.height > 600) continue;
+      if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) continue;
+      const size = rect.width * rect.height;
+      if (size < area) {next = node; area = size;}
+    }
+    setHoveredMedia(next, next?.closest('[data-testid="msg-container"]') || null);
+  }
+
   document.addEventListener('pointermove', event => {
     pendingPointer = [event.clientX, event.clientY];
     if (pointerScheduled) return;
@@ -282,12 +331,14 @@
       if (pendingPointer) {
         updateAvatarHover(...pendingPointer);
         updateHeaderNameHover(...pendingPointer);
+        updateMediaHover(...pendingPointer);
       }
     });
   }, {passive:true, capture:true});
   document.addEventListener('pointerleave', () => {
     setHoveredAvatar(null);
     setHoveredHeaderName(null);
+    setHoveredMedia(null, null);
   });
 
   /* O WhatsApp monta o preview da resposta fora do editor, às vezes sem data-testid.
@@ -389,6 +440,7 @@
     createShield();
     if (!current.enabled || !current.revealOnHover || !current.categories.avatars) setHoveredAvatar(null);
     if (!current.enabled || !current.revealOnHover || !current.categories.names) setHoveredHeaderName(null);
+    if (!current.enabled || !current.revealOnHover || (!current.categories.media && !current.categories.messages)) setHoveredMedia(null, null);
     scheduleScan();
   }
 

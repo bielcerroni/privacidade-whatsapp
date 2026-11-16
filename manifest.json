@@ -3,7 +3,7 @@
   "name": "Neblina — Privacidade no WhatsApp Web",
   "short_name": "Neblina",
   "description": "Proteja suas conversas no WhatsApp Web com desfoque configurável, modo escudo e atalhos.",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "minimum_chrome_version": "110",
   "permissions": [
     "storage"

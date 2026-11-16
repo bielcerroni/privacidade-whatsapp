@@ -183,6 +183,28 @@ html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] :is(
   [data-testid="msg-container"] [style*="background-image"]
 ):hover { filter: none !important; }
 
+
+/* Emojis, figurinhas e GIFs podem receber dois filtros: bolha e mídia.
+   Revele ambos somente na região em hover, inclusive sob overlays de ação. */
+html[data-nb-active="true"][data-nb-messages="true"][data-nb-reveal="hover"] #main [data-testid="msg-container"][data-nb-message-hover="true"] {
+  filter: none !important;
+}
+html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] #main :is(
+  [data-testid="msg-container"]:hover,
+  [data-testid="msg-container"][data-nb-message-hover="true"]
+) :is(
+  img:not([data-nb-avatar-image]),
+  video,
+  canvas,
+  [data-testid*="sticker"],
+  [data-testid*="emoji"],
+  [style*="background-image"]
+) {filter: none !important;}
+html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] #main [data-nb-media-hover="true"],
+html[data-nb-active="true"][data-nb-media="true"][data-nb-reveal="hover"] #main [data-nb-media-hover="true"] :is(img,video,canvas) {
+  filter: none !important;
+}
+
 /* Resposta citada sobre o compositor: protege remetente e mensagem selecionada.
    O filtro atua no cartão de conteúdo, não no botão X de cancelar. */
 html[data-nb-active="true"]:is([data-nb-messages="true"], [data-nb-composer="true"]) #main :is(

@@ -8,7 +8,7 @@
   Oculte conversas, contatos e imagens sem atrapalhar o uso do WhatsApp.  
   Escolha o que desfocar, ajuste a intensidade e revele informações quando precisar.
 
-  [![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.5-243a40?style=flat-square)](manifest.json)
+  [![Versão](https://img.shields.io/badge/vers%C3%A3o-0.1.6-243a40?style=flat-square)](manifest.json)
   [![Chrome](https://img.shields.io/badge/Chrome-Manifest%20V3-243a40?style=flat-square)](manifest.json)
   [![Validação](https://github.com/bielcerroni/privacidade-whatsapp/actions/workflows/validate.yml/badge.svg)](https://github.com/bielcerroni/privacidade-whatsapp/actions/workflows/validate.yml)
   [![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-243a40?style=flat-square)](LICENSE)
@@ -117,7 +117,7 @@ O workflow em `.github/workflows/validate.yml` também verifica a sintaxe JavaSc
 
 ## Estado do projeto
 
-**Versão atual: `0.1.5` — desenvolvimento.**
+**Versão atual: `0.1.6` — desenvolvimento.**
 
 A Neblina está em uso e em refinamento contínuo. Novas alterações na estrutura do WhatsApp Web podem exigir ajustes nos seletores de interface e nos comportamentos de desfoque.
 

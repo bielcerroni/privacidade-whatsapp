@@ -277,3 +277,36 @@ def test_new_and_replaced_contact_photo_protected_before_dom_scan():
             page.wait_for_function("getComputedStyle(document.querySelector('#incoming-avatar')).filter.startsWith('blur(')")
         finally:
             browser.close()
+
+
+def test_sticker_emoji_hover_clears_media_and_bubble_filters():
+    """Hover da figurinha revela a imagem e a bolha, mesmo sob overlay."""
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(executable_path='/usr/bin/chromium', headless=True, args=['--no-sandbox'])
+        try:
+            page = browser.new_page(viewport={'width':1024,'height':900})
+            setup_wa(page)
+            page.evaluate("""() => {
+              const message = document.querySelector('#message');
+              const wrap = document.createElement('div');
+              wrap.id = 'emoji-frame';
+              wrap.setAttribute('data-testid', 'sticker');
+              wrap.style.cssText = 'position:relative;width:64px;height:64px;';
+              wrap.innerHTML = '<img id="emoji-image" width="64" height="64" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=">' +
+                '<span id="emoji-overlay" style="position:absolute;inset:0;z-index:5;background:transparent"></span>';
+              message.prepend(wrap);
+            }""")
+            assert page.locator('#message').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            assert page.locator('#emoji-image').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+            page.locator('#emoji-overlay').hover()
+            page.wait_for_function("getComputedStyle(document.querySelector('#message')).filter === 'none'")
+            page.wait_for_function("getComputedStyle(document.querySelector('#emoji-image')).filter === 'none'")
+            page.wait_for_function("document.querySelector('#message').dataset.nbMessageHover === 'true'")
+            page.mouse.move(850, 560)
+            page.wait_for_function("getComputedStyle(document.querySelector('#message')).filter.startsWith('blur(')")
+            page.wait_for_function("getComputedStyle(document.querySelector('#emoji-image')).filter.startsWith('blur(')")
+            page.evaluate("chrome.storage.local.set({neblinaSettings:{revealOnHover:false}})")
+            page.locator('#emoji-overlay').hover()
+            assert page.locator('#emoji-image').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
+        finally:
+            browser.close()

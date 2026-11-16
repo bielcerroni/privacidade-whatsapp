@@ -310,3 +310,12 @@ def test_sticker_emoji_hover_clears_media_and_bubble_filters():
             assert page.locator('#emoji-image').evaluate('(el)=>getComputedStyle(el).filter').startswith('blur(')
         finally:
             browser.close()
+
+
+def test_shortcut_alt_x_manifest_and_popup():
+    """Manifesto e painel precisam mostrar o mesmo atalho padrão."""
+    manifest = json.loads((ROOT / 'manifest.json').read_text(encoding='utf-8'))
+    assert manifest['commands']['toggle-privacy']['suggested_key']['default'] == 'Alt+X'
+    html = (ROOT / 'popup' / 'index.html').read_text(encoding='utf-8')
+    assert '<kbd>Alt</kbd><b>+</b><kbd>X</kbd>' in html
+    assert '<kbd>Shift</kbd>' not in html
